@@ -1,0 +1,49 @@
+{
+  "techniques": [
+	{
+		"id": "heal",
+		"name": "Soin",
+		"type": "action",
+		"description": "Soigne quelques PV.",
+		"icon": "heal.png",
+		"value": 30,
+		"unity": "point"
+	},
+	{
+		"id": "fire",
+		"name": "Feu",
+		"type": "action",
+		"description": "Brûle et fait perdre quelques PV à la cible.",
+		"icon": "fire.png",
+		"value": -10,
+		"unity": "point"
+	},
+	{
+		"id": "extra_move",
+		"name": "Bonus déplacement",
+		"type": "move",
+		"description": "Permet à ce personnage de se déplacer plus rapidement.",
+		"icon": "extra_move.png",
+		"value": 1,
+		"unity": ""
+	},
+	{
+		"id": "ignore_walls",
+		"name": "Passe-muraille",
+		"type": "special",
+		"description": "Permet à ce personnage de se déplacer même sur les obstacles.",
+		"icon": "ignore_walls.png",
+		"value": 0,
+		"unity": ""
+	},
+	{
+		"id": "ice",
+		"name": "Glace",
+		"type": "action",
+		"description": "Gèle et fait perdre quelques PV à la cible.",
+		"icon": "ice.png",
+		"value": -10,
+		"unity": "point"
+	}
+	]
+}

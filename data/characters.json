@@ -1,0 +1,277 @@
+
+{
+  "characters": [
+	{"id": "cat_mage",
+	  "name": "Miaou le Mage",
+	  "rarity": 1,
+	  "description": "Un petit chat apprenti sorcier. Il collectionne les étoiles et fait apparaître des bulles lumineuses.",
+	  "image": "cat_mage.png",
+	  "sell_value": 2,
+	  "stats": {
+		"lifepoints": 27,
+		"magic": 20,
+		"attack": 6,
+		"defense": 4,
+		"escape": 2,
+		"chance": 1,
+		"moves": 2,
+		"techniques": ["fire","heal","extra_move"]
+	  }
+	},
+	{"id": "frog_king",
+	  "name": "Roi Croâ",
+	  "rarity": 1,
+	  "description": "Une grenouille royale qui règne sur une mare enchantée. Sa couronne est un peu trop grande.",
+	  "image": "frog_king.png",
+	  "sell_value": 2,
+	  "stats": {
+		"lifepoints": 27,
+		"magic": 20,
+		"attack": 6,
+		"defense": 4,
+		"escape": 2,
+		"chance": 1,
+		"moves": 3,
+		"techniques": ["fire","heal","extra_move"]
+	  }
+	},
+	{"id": "panda_ninja",
+	  "name": "Panda Ninja",
+	  "rarity": 1,
+	  "description": "Silencieux et rapide, ce panda préfère les bambous aux missions secrètes.",
+	  "image": "panda_ninja.png",
+	  "sell_value": 2,
+	  "stats": {
+		"lifepoints": 27,
+		"magic": 20,
+		"attack": 6,
+		"defense": 4,
+		"escape": 2,
+		"chance": 1,
+		"moves": 3,
+		"techniques": ["fire","heal","extra_move"]
+	  }
+	},
+	{"id": "axolotl_star",
+	  "name": "Axolotl Stellaire",
+	  "rarity": 2,
+	  "description": "Un axolotl venu d'une galaxie lointaine. Ses branchies brillent dans l'obscurité.",
+	  "image": "axolotl_star.png",
+	  "sell_value": 5,
+	  "stats": {
+		"lifepoints": 27,
+		"magic": 20,
+		"attack": 6,
+		"defense": 4,
+		"escape": 2,
+		"chance": 1,
+		"moves": 2,
+		"techniques": ["fire","heal","extra_move"]
+	  }
+	},
+	{"id": "dragon_candy",
+	  "name": "Dragounet Bonbon",
+	  "rarity": 2,
+	  "description": "Un petit dragon très gourmand qui ne peut s'empêcher de dévorer toutes les friandises qui passent à sa portée. Au fur et à mesaure du temps, son corps s'est métamorphosé pour ressembler à sa principale source de nourriture.",
+	  "image": "dragon_candy.png",
+	  "sell_value": 5,
+	  "stats": {
+		"lifepoints": 27,
+		"magic": 20,
+		"attack": 6,
+		"defense": 4,
+		"escape": 2,
+		"chance": 1,
+		"moves": 1,
+		"techniques": ["fire","heal","extra_move"]
+	  }
+	},
+	{"id": "funny_ghost",
+	  "name": "Fantôme rigolo",
+	  "rarity": 2,
+	  "description": "Après une vie morne, triste et des années d'errance, ce fantôme hors du commun se retrouva par hasard au beau milieu d'une fête forraine. Il se mit alors à la hanter mais au fil du temps l'envie de terrifier les vivants céda sa place aux rires des enfants et aux ballons colorés. Désormais, il ne peut plus s'empêcher de rire et de s'amuser en permanence.",
+	  "image": "funny_ghost.png",
+	  "sell_value": 5,
+	  "stats": {
+		"lifepoints": 27,
+		"magic": 20,
+		"attack": 6,
+		"defense": 4,
+		"escape": 2,
+		"chance": 1,
+		"moves": 2,
+		"techniques": ["fire","heal","extra_move"]
+	  }
+	},
+	{"id": "unicorn_cloud",
+	  "name": "Licorne Nuage",
+	  "rarity": 3,
+	  "description": "Elle galope sur les nuages et laisse une traînée de poussière arc-en-ciel derrière elle.",
+	  "image": "unicorn_cloud.png",
+	  "sell_value": 8,
+	  "stats": {
+		"lifepoints": 27,
+		"magic": 20,
+		"attack": 6,
+		"defense": 4,
+		"escape": 2,
+		"chance": 1,
+		"moves": 2,
+		"techniques": ["fire","heal","extra_move"]
+	  }
+	},
+	{"id": "phoenix_solar",
+	  "name": "Phénix Solaire",
+	  "rarity": 4,
+	  "description": "Un oiseau flamboyant qui renaît chaque matin dans un rayon de soleil doré.",
+	  "image": "phoenix_solar.png",
+	  "sell_value": 12,
+	  "stats": {
+		"lifepoints": 27,
+		"magic": 20,
+		"attack": 6,
+		"defense": 4,
+		"escape": 2,
+		"chance": 1,
+		"moves": 2,
+		"techniques": ["fire","heal","extra_move"]
+	  }
+	},
+	{"id": "ninja_haku",
+	  "name": "Ninja Haku",
+	  "rarity": 4,
+	  "description": "Après la destruction totale de son monde, conduisant l'humanité aux ténèbres, ce jeune ninja est le seul à avoir garder son esprit intacte et sa mission est de ramenant la lumière dans le coeur des humains grâce au pouvoir du soleil violet qu'il est le seul à pouvoir voir.Un enfant qui vivait autrefois sur la terre mais après qu'elle soit détruite tous les humains sont revenus maléfiques sur une nouvelle terre. Ensuite une sorte de soleil dont il est le seul à le voir",
+	  "image": "ninja_haku.png",
+	  "sell_value": 12,
+	  "stats": {
+		"lifepoints": 27,
+		"magic": 20,
+		"attack": 6,
+		"defense": 4,
+		"escape": 2,
+		"chance": 1,
+		"moves": 2,
+		"techniques": ["fire","heal","extra_move"]
+	  }
+	},
+	{"id": "fatty_killer",
+	  "name": "Assassin rondouillard",
+	  "rarity": 4,
+	  "description": "Chef du terrible gang des assassins rondouillards, il travaille régulièrement avec les assassins maigrichons mais son but secret est en réalité d'anéantir ces derniers car il déteste partager les récompenses de ses missions.",
+	  "image": "fatty_killer.png",
+	  "sell_value": 12,
+	  "stats": {
+		"lifepoints": 27,
+		"magic": 20,
+		"attack": 6,
+		"defense": 4,
+		"escape": 2,
+		"chance": 1,
+		"moves": 2,
+		"techniques": ["fire","heal","extra_move"]
+	  }
+	},
+	{"id": "cosmic_leviathan",
+	  "name": "Léviathan Cosmique",
+	  "rarity": 5,
+	  "description": "Une créature mythique qui nage entre les étoiles. On raconte qu'elle connaît tous les secrets de l'univers.",
+	  "image": "cosmic_leviathan.png",
+	  "sell_value": 25,
+	  "stats": {
+		"lifepoints": 27,
+		"magic": 20,
+		"attack": 6,
+		"defense": 4,
+		"escape": 2,
+		"chance": 1,
+		"moves": 2,
+		"techniques": ["fire","heal","extra_move"]
+	  }
+	},
+	{"id": "diamond_slime",
+	  "name": "Slime Diamant",
+	  "rarity": 5,
+	  "description": "Une créature translucide extrêmement rare, dont le corps reflète mille éclats de lumière.",
+	  "image": "diamond_slime.png",
+	  "sell_value": 25,
+	  "stats": {
+		"lifepoints": 27,
+		"magic": 20,
+		"attack": 6,
+		"defense": 4,
+		"escape": 2,
+		"chance": 1,
+		"moves": 1,
+		"techniques": ["fire","heal","extra_move"]
+	  }
+	},
+	{"id": "skinny_killer",
+	  "name": "Assassin maigrichon",
+	  "rarity": 5,
+	  "description": "Assassin réputé dans l'univers entier. Son but ultime est de régner sur l'univers. Il fait souvent équipe avec les assassins rondouillards.",
+	  "image": "skinny_killer.png",
+	  "sell_value": 25,
+	  "stats": {
+		"lifepoints": 27,
+		"magic": 20,
+		"attack": 6,
+		"defense": 4,
+		"escape": 2,
+		"chance": 1,
+		"moves": 2,
+		"techniques": ["fire","heal","extra_move"]
+	  }
+	},
+	{"id": "quetzalcoatl",
+	  "name": "Quetzalcoatl",
+	  "rarity": 6,
+	  "description": "Dieu suprême, il reigne sur le monde des Dieux et des vivants.",
+	  "image": "quetzalcoatl.png",
+	  "sell_value": 40,
+	  "stats": {
+		"lifepoints": 27,
+		"magic": 20,
+		"attack": 6,
+		"defense": 4,
+		"escape": 2,
+		"chance": 1,
+		"moves": 3,
+		"techniques": ["fire","heal","extra_move"]
+	  }
+	},
+	{"id": "kuntur",
+	  "name": "Kuntur",
+	  "rarity": 6,
+	  "description": "Messager des Dieux. Il est chargé de transmettre la parole des dieux aux vivants.",
+	  "image": "kuntur.png",
+	  "sell_value": 40,
+	  "stats": {
+		"lifepoints": 27,
+		"magic": 20,
+		"attack": 6,
+		"defense": 4,
+		"escape": 2,
+		"chance": 1,
+		"moves": 4,
+		"techniques": ["fire","heal","extra_move"]
+	  }
+	},
+	{"id": "balham",
+	  "name": "Balham",
+	  "rarity": 6,
+	  "description": "Dieu de la nuit et maître de l'inframonde. Il empêche les forces maléfiques d'attaquer les vivants pendant leur sommeil.",
+	  "image": "balham.png",
+	  "sell_value": 40,
+	  "stats": {
+		"lifepoints": 27,
+		"magic": 20,
+		"attack": 6,
+		"defense": 4,
+		"escape": 2,
+		"chance": 1,
+		"moves": 3,
+		"techniques": ["fire","heal","extra_move"]
+	  }
+	}
+  ]
+}
