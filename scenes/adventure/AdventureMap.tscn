@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://bc3nvsmbxs23b"]
+
+[ext_resource type="Script" uid="uid://bksnhmouhnj7e" path="res://AdventureMap.gd" id="1_kb4hq"]
+
+[node name="AdventureMap" type="Control" unique_id=1335601658]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_kb4hq")

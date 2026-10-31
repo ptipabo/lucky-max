@@ -1,10 +1,8 @@
 
 extends Control
 
-const DOORS_GAME_SCENE = preload(
-    "res://scenes/DoorsGame.tscn"
-)
-
+const DOORS_GAME_SCENE = preload("res://scenes/DoorsGame.tscn")
+const ADVENTURE_MAP_SCENE = preload("res://scenes/adventure/AdventureMap.tscn")
 const BG_COLOR := Color("54423bff")
 const PANEL_COLOR := Color("38305e00")
 const ACCENT_COLOR := Color("ffc83cff")
@@ -310,12 +308,35 @@ func _show_adventure() -> void:
 	
 	# screen_background.texture = load(BACKGROUNDS_FOLDER + "adventure_bg.jpg")
 	
-	var title := Label.new()
-	title.text = current_tab
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 28)
-	title.add_theme_color_override("font_color", TEXT_COLOR)
-	content.add_child(title)
+	#var title := Label.new()
+	#title.text = current_tab
+	#title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	#title.add_theme_font_size_override("font_size", 28)
+	#title.add_theme_color_override("font_color", TEXT_COLOR)
+	#content.add_child(title)
+	var adventure_map = ADVENTURE_MAP_SCENE.instantiate()
+	
+	adventure_map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	adventure_map.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	
+	adventure_map.stage_selected.connect(
+		_on_adventure_stage_selected
+	)
+	
+	content.add_child(adventure_map)
+
+# Réagit à la sélection d'une étape.
+func _on_adventure_stage_selected(stage_id: String) -> void:
+	var dialog := AcceptDialog.new()
+	
+	dialog.title = "Étape sélectionnée"
+	dialog.dialog_text = (
+		"Tu as sélectionné : " + stage_id
+		+ "\n\nLes dialogues et les combats seront ajoutés prochainement."
+	)
+	
+	add_child(dialog)
+	dialog.popup_centered()
 
 # Génère la vue "Mini-jeux" contenant la liste de tous les mini-jeux
 func _show_games() -> void:
