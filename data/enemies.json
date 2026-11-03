@@ -83,6 +83,16 @@
 		"description": "Le mystérieux protecteur de la cité perdue.",
 		"dialogue_lines": ["Tu as traversé mes terres, vaincu mes gardiens et défié les anciens. Te voici enfin devant le dernier rempart."],
 		"team_id": "enemy_team_08"
+	},
+	{
+		"id": "balham",
+		"name": "Balham",
+		"type": "boss",
+		"title": "Le Gardien de la Nuit",
+		"portrait": "res://assets/enemies/balham.png",
+		"description": "Le protecteur des vivants contre les forces du mal qui sévissent la nuit.",
+		"dialogue_lines": ["ô mortel, tu oses pénétrer dans nos plus sombres contrées. Prouve-moi ta valeur et je jugerai si tu es digne de t'aventurer plus loin dans ce royaume."],
+		"team_id": "enemy_team_09"
 	}
 	]
 }

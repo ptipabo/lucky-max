@@ -12,16 +12,18 @@ const ADVENTURE_BACKGROUND: Texture2D = preload("res://assets/backgrounds/advent
 const MAP_HEIGHT := 1250.0
 const NODE_SIZE := Vector2(76, 76)
 
-const STAGES: Array[Dictionary] = [
-	{"id": "stage_01", "name": "Entrée de la jungle", "unlocked": true, "enemy_id": "rival_explorer"},
-	{"id": "stage_02", "name": "Sanctuaire oublié", "unlocked": false, "enemy_id": "jade_guardian"},
-	{"id": "stage_03", "name": "Ruines de jade", "unlocked": false, "enemy_id": "relic_hunter"},
-	{"id": "stage_04", "name": "Temple du soleil", "unlocked": false, "enemy_id": "sun_priest"},
-	{"id": "stage_05", "name": "Cité engloutie", "unlocked": false, "enemy_id": "mercenary_captain"},
-	{"id": "stage_06", "name": "Pont des anciens", "unlocked": false, "enemy_id": "ancient_sentinel"},
-	{"id": "stage_07", "name": "Temple des serpents", "unlocked": false, "enemy_id": "high_priest"},
-	{"id": "stage_08", "name": "Sanctuaire céleste", "unlocked": false, "enemy_id": "forgotten_ruler"}
-]
+#const STAGES: Array[Dictionary] = [
+	#{"id": "stage_01", "name": "Entrée de la jungle", "unlocked": true, "enemy_id": "rival_explorer"},
+	#{"id": "stage_02", "name": "Sanctuaire oublié", "unlocked": false, "enemy_id": "jade_guardian"},
+	#{"id": "stage_03", "name": "Ruines de jade", "unlocked": false, "enemy_id": "relic_hunter"},
+	#{"id": "stage_04", "name": "Temple du soleil", "unlocked": false, "enemy_id": "sun_priest"},
+	#{"id": "stage_05", "name": "Cité engloutie", "unlocked": false, "enemy_id": "mercenary_captain"},
+	#{"id": "stage_06", "name": "Pont des anciens", "unlocked": false, "enemy_id": "ancient_sentinel"},
+	#{"id": "stage_07", "name": "Temple des serpents", "unlocked": false, "enemy_id": "high_priest"},
+	#{"id": "stage_08", "name": "Sanctuaire céleste", "unlocked": false, "enemy_id": "forgotten_ruler"}
+#]
+
+var stages_list: Array[Dictionary]
 
 var enemies_by_id: Dictionary = {}
 
@@ -106,6 +108,7 @@ var stage_buttons: Array[Button] = []
 
 
 func _ready() -> void:
+	_load_stages_list()
 	_load_enemies()
 	_build_interface()
 
@@ -180,6 +183,61 @@ func _build_interface() -> void:
 # CRÉATION DU PARCOURS
 # --------------------------------------------------
 
+# On charge la liste des niveaux
+func _load_stages_list() -> void:
+	var stages_list_path = "res://data/stages.json"
+	if not FileAccess.file_exists(stages_list_path):
+		push_error("Liste introuvable : " + stages_list_path)
+		return
+
+	var file := FileAccess.open(
+		stages_list_path,
+		FileAccess.READ
+	)
+
+	if file == null:
+		push_error("Impossible de lire la liste des niveaux de l'aventure.")
+		return
+
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+
+	if not parsed is Dictionary:
+		push_error("Le liste doit contenir un objet JSON.")
+		return
+
+	var stages: Variant = parsed.get("stages", [])
+
+	if not stages is Array:
+		push_error("La liste des niveaux de l'aventure est invalide.")
+		return
+
+	var stage_counter: int = 0
+
+	for stage in stages:
+		stage_counter += 1
+		if not stage is Dictionary:
+			push_warning("Entrée de niveau d'aventure ignorée : format invalide.")
+			continue
+
+		var stage_id: String = str(stage.get("id", ""))
+
+		if stage_id.is_empty():
+			push_warning("Un niveau d'aventure sans identifiant a été ignoré.")
+			continue
+
+		for loaded_stage in stages_list:
+			if loaded_stage.get("id") == stage_id:
+				push_warning("Identifiant de niveau d'aventure en double : " + stage_id)
+				continue
+		
+		print("Niveau d'aventure en cours de chargement : ", stage_counter)
+		
+		stages_list += [stage]
+		
+	print("Niveaux d'aventure chargés : ", stages_list.size())
+	print(stages_list)
+
 func _layout_stages() -> void:
 	if map_canvas == null:
 		return
@@ -201,20 +259,8 @@ func _layout_stages() -> void:
 	var vertical_spacing := 145.0
 
 	# Alternance gauche / droite.
-	var horizontal_positions := [
-		0.35,
-		0.65,
-		0.78,
-		0.45,
-		0.22,
-		0.42,
-		0.72,
-		0.55
-	]
-
-	for i in range(STAGES.size()):
-
-		var x: float = map_width * horizontal_positions[i]
+	for i in range(stages_list.size()):
+		var x: float = map_width * stages_list[i].get("horizontal_pos", "0.5")
 		var y: float = MAP_HEIGHT - 90.0 - (float(i) * vertical_spacing)
 
 		points.append(Vector2(x, y))
@@ -224,12 +270,11 @@ func _layout_stages() -> void:
 	map_canvas.queue_redraw()
 
 	# Création des boutons.
-	for i in range(STAGES.size()):
+	for i in range(stages_list.size()):
 		_create_stage_button(i, points[i])
 
-
 func _create_stage_button(index: int,position_on_map: Vector2) -> void:
-	var stage: Dictionary = STAGES[index]
+	var stage: Dictionary = stages_list[index]
 	var is_unlocked: bool = stage["unlocked"]
 	
 	var button := Button.new()
@@ -322,7 +367,7 @@ func _create_stage_button(index: int,position_on_map: Vector2) -> void:
 # --------------------------------------------------
 
 func _on_stage_pressed(stage_id: String) -> void:
-	for stage in STAGES:
+	for stage in stages_list:
 		if stage["id"] == stage_id:
 			var enemy_id: String = stage.get("enemy_id", "")
 			var enemy_data: Dictionary = enemies_by_id.get(
@@ -368,6 +413,7 @@ func _create_enemy_portrait(index: int, stage: Dictionary, stage_position: Vecto
 	var enemy_id: String = stage.get("enemy_id", "")
 
 	if not enemies_by_id.has(enemy_id):
+		push_warning("Cet ennemi n'a pas d'identifiant.")
 		return
 
 	var enemy: Dictionary = enemies_by_id[enemy_id]
@@ -375,6 +421,7 @@ func _create_enemy_portrait(index: int, stage: Dictionary, stage_position: Vecto
 
 	# Vérification de l'existence du portrait.
 	if not ResourceLoader.exists(portrait_path):
+		push_warning("Cet ennemi n'a pas d'illustration.")
 		return
 
 	var portrait_texture := load(portrait_path) as Texture2D

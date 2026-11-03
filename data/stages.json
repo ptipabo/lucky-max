@@ -1,12 +1,19 @@
 {
 	"stages": [
-		{"id": "stage_01", "name": "Entrée de la jungle", "unlocked": true, "enemy_id": "rival_explorer", "horizontal_pos": 0.35},
+	{
+		"id": "stage_01",
+		"name": "Entrée de la jungle",
+		"unlocked": true,
+		"enemy_id": "rival_explorer",
+		"horizontal_pos": 0.35
+	},
 		{"id": "stage_02", "name": "Sanctuaire oublié", "unlocked": false, "enemy_id": "jade_guardian", "horizontal_pos": 0.65},
 		{"id": "stage_03", "name": "Ruines de jade", "unlocked": false, "enemy_id": "relic_hunter", "horizontal_pos": 0.78},
 		{"id": "stage_04", "name": "Temple du soleil", "unlocked": false, "enemy_id": "sun_priest", "horizontal_pos": 0.45},
 		{"id": "stage_05", "name": "Cité engloutie", "unlocked": false, "enemy_id": "mercenary_captain", "horizontal_pos": 0.22},
 		{"id": "stage_06", "name": "Pont des anciens", "unlocked": false, "enemy_id": "ancient_sentinel", "horizontal_pos": 0.42},
 		{"id": "stage_07", "name": "Temple des serpents", "unlocked": false, "enemy_id": "high_priest", "horizontal_pos": 0.72},
-		{"id": "stage_08", "name": "Sanctuaire céleste", "unlocked": false, "enemy_id": "forgotten_ruler", "horizontal_pos": 0.55}
+		{"id": "stage_08", "name": "Sanctuaire céleste", "unlocked": false, "enemy_id": "forgotten_ruler", "horizontal_pos": 0.55},
+		{"id": "stage_09", "name": "Ténèbres infinies", "unlocked": false, "enemy_id": "balham", "horizontal_pos": 0.35}
 	]
 }
