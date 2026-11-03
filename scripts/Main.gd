@@ -3,6 +3,7 @@ extends Control
 
 const DOORS_GAME_SCENE = preload("res://scenes/DoorsGame.tscn")
 const ADVENTURE_MAP_SCENE = preload("res://scenes/adventure/AdventureMap.tscn")
+const ADVENTURE_DIALOGUE_SCENE = preload("res://scenes/adventure/AdventureDialogue.tscn")
 const BG_COLOR := Color("54423bff")
 const PANEL_COLOR := Color("38305e00")
 const ACCENT_COLOR := Color("ffc83cff")
@@ -326,15 +327,43 @@ func _show_adventure() -> void:
 	content.add_child(adventure_map)
 
 # Réagit à la sélection d'une étape.
-func _on_adventure_stage_selected(stage_id: String) -> void:
-	var dialog := AcceptDialog.new()
-	
-	dialog.title = "Étape sélectionnée"
-	dialog.dialog_text = (
-		"Tu as sélectionné : " + stage_id
-		+ "\n\nLes dialogues et les combats seront ajoutés prochainement."
+func _on_adventure_stage_selected(
+	stage_id: String,
+	enemy_data: Dictionary
+) -> void:
+
+	_clear_content()
+
+	var dialogue = ADVENTURE_DIALOGUE_SCENE.instantiate()
+
+	dialogue.set_anchors_and_offsets_preset(
+		Control.PRESET_FULL_RECT
 	)
-	
+
+	dialogue.dialogue_closed.connect(
+		_show_adventure
+	)
+
+	dialogue.duel_requested.connect(
+		_on_dialogue_duel_requested
+	)
+
+	content.add_child(dialogue)
+
+	dialogue.configure(enemy_data)
+
+
+func _on_dialogue_duel_requested(enemy_id: String) -> void:
+
+	print("Préparation du duel contre : ", enemy_id)
+
+	var dialog := AcceptDialog.new()
+	dialog.title = "Préparation du duel"
+	dialog.dialog_text = (
+		"Adversaire : " + enemy_id
+		+ "\n\nNous créerons prochainement l'écran de sélection des figurines."
+	)
+
 	add_child(dialog)
 	dialog.popup_centered()
 

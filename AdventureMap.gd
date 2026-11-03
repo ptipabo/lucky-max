@@ -1,6 +1,6 @@
 extends Control
 
-signal stage_selected(stage_id: String)
+signal stage_selected(stage_id: String, enemy_data: Dictionary)
 
 const BACKGROUND_COLOR := Color("#263D32")
 const STONE_COLOR := Color("#806B50")
@@ -13,15 +13,17 @@ const MAP_HEIGHT := 1250.0
 const NODE_SIZE := Vector2(76, 76)
 
 const STAGES: Array[Dictionary] = [
-	{"id": "stage_01", "name": "Entrée de la jungle", "unlocked": true},
-	{"id": "stage_02", "name": "Sanctuaire oublié", "unlocked": false},
-	{"id": "stage_03", "name": "Ruines de jade", "unlocked": false},
-	{"id": "stage_04", "name": "Temple du soleil", "unlocked": false},
-	{"id": "stage_05", "name": "Cité engloutie", "unlocked": false},
-	{"id": "stage_06", "name": "Pont des anciens", "unlocked": false},
-	{"id": "stage_07", "name": "Temple des serpents", "unlocked": false},
-	{"id": "stage_08", "name": "Sanctuaire céleste", "unlocked": false}
+	{"id": "stage_01", "name": "Entrée de la jungle", "unlocked": true, "enemy_id": "rival_explorer"},
+	{"id": "stage_02", "name": "Sanctuaire oublié", "unlocked": false, "enemy_id": "jade_guardian"},
+	{"id": "stage_03", "name": "Ruines de jade", "unlocked": false, "enemy_id": "relic_hunter"},
+	{"id": "stage_04", "name": "Temple du soleil", "unlocked": false, "enemy_id": "sun_priest"},
+	{"id": "stage_05", "name": "Cité engloutie", "unlocked": false, "enemy_id": "mercenary_captain"},
+	{"id": "stage_06", "name": "Pont des anciens", "unlocked": false, "enemy_id": "ancient_sentinel"},
+	{"id": "stage_07", "name": "Temple des serpents", "unlocked": false, "enemy_id": "high_priest"},
+	{"id": "stage_08", "name": "Sanctuaire céleste", "unlocked": false, "enemy_id": "forgotten_ruler"}
 ]
+
+var enemies_by_id: Dictionary = {}
 
 # Cette classe dessine le chemin sur la carte.
 class MapCanvas extends Control:
@@ -104,6 +106,7 @@ var stage_buttons: Array[Button] = []
 
 
 func _ready() -> void:
+	_load_enemies()
 	_build_interface()
 
 
@@ -178,7 +181,6 @@ func _build_interface() -> void:
 # --------------------------------------------------
 
 func _layout_stages() -> void:
-
 	if map_canvas == null:
 		return
 
@@ -226,36 +228,32 @@ func _layout_stages() -> void:
 		_create_stage_button(i, points[i])
 
 
-func _create_stage_button(
-	index: int,
-	position_on_map: Vector2
-) -> void:
-
+func _create_stage_button(index: int,position_on_map: Vector2) -> void:
 	var stage: Dictionary = STAGES[index]
 	var is_unlocked: bool = stage["unlocked"]
-
+	
 	var button := Button.new()
 	button.custom_minimum_size = NODE_SIZE
 	button.size = NODE_SIZE
-
+	
 	button.position = position_on_map - NODE_SIZE / 2.0
-
+	
 	button.text = str(index + 1)
-
+	
 	button.add_theme_font_size_override("font_size", 25)
 	button.add_theme_color_override(
 		"font_color",
 		TEXT_COLOR
 	)
-
+	
 	# Apparence des étapes accessibles et verrouillées.
 	var button_color := STONE_COLOR
-
+	
 	if is_unlocked:
 		button_color = GOLD_COLOR
 	else:
 		button_color = LOCKED_COLOR
-
+	
 	var normal_style := StyleBoxFlat.new()
 	normal_style.bg_color = button_color
 	normal_style.set_corner_radius_all(38)
@@ -294,13 +292,13 @@ func _create_stage_button(
 	button.pressed.connect(
 		_on_stage_pressed.bind(stage["id"])
 	)
-
+	
 	map_canvas.add_child(button)
 	stage_buttons.append(button)
-
+	
 	# Nom de l'étape.
 	var stage_label := Label.new()
-
+	
 	stage_label.text = stage["name"]
 	stage_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stage_label.position = Vector2(
@@ -308,22 +306,110 @@ func _create_stage_button(
 		position_on_map.y + 43
 	)
 	stage_label.size = Vector2(200, 30)
-
+	
 	stage_label.add_theme_font_size_override("font_size", 13)
 	stage_label.add_theme_color_override(
 		"font_color",
 		TEXT_COLOR if is_unlocked else Color("#AAA49A")
 	)
-
+	
 	map_canvas.add_child(stage_label)
-
+	# Affichage du portrait de l'adversaire.
+	_create_enemy_portrait(index, stage, position_on_map)
 
 # --------------------------------------------------
 # SÉLECTION D'UNE ÉTAPE
 # --------------------------------------------------
 
 func _on_stage_pressed(stage_id: String) -> void:
-	stage_selected.emit(stage_id)
+	for stage in STAGES:
+		if stage["id"] == stage_id:
+			var enemy_id: String = stage.get("enemy_id", "")
+			var enemy_data: Dictionary = enemies_by_id.get(
+				enemy_id,
+				{}
+			)
+			
+			if enemy_data.is_empty():
+				push_warning("Adversaire introuvable : " + enemy_id)
+				return
+			
+			stage_selected.emit(stage_id, enemy_data)
+			return
 	
 func _scroll_to_bottom(scroll: ScrollContainer) -> void:
 	scroll.scroll_vertical = scroll.get_v_scroll_bar().max_value
+	
+func _load_enemies() -> void:
+	var file := FileAccess.open(
+		"res://data/enemies.json",
+		FileAccess.READ
+	)
+	
+	if file == null:
+		push_error("Impossible de charger enemies.json")
+		return
+		
+	var json := JSON.new()
+	var error := json.parse(file.get_as_text())
+	
+	if error != OK:
+		push_error(
+			"Erreur JSON : " + json.get_error_message()
+		)
+		return
+		
+	var data: Dictionary = json.data
+	
+	for enemy in data.get("enemies", []):
+		enemies_by_id[enemy["id"]] = enemy
+
+func _create_enemy_portrait(index: int, stage: Dictionary, stage_position: Vector2) -> void:
+	var enemy_id: String = stage.get("enemy_id", "")
+
+	if not enemies_by_id.has(enemy_id):
+		return
+
+	var enemy: Dictionary = enemies_by_id[enemy_id]
+	var portrait_path: String = enemy.get("portrait", "")
+
+	# Vérification de l'existence du portrait.
+	if not ResourceLoader.exists(portrait_path):
+		return
+
+	var portrait_texture := load(portrait_path) as Texture2D
+
+	if portrait_texture == null:
+		return
+
+	var portrait := TextureRect.new()
+
+	portrait.texture = portrait_texture
+
+	# Taille réduite du portrait.
+	portrait.custom_minimum_size = Vector2.ZERO
+	portrait.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	portrait.size = Vector2(48, 64)
+
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	# Placement à gauche ou à droite du médaillon.
+	var side: float = 1.0
+
+	if stage_position.x > map_canvas.size.x * 0.5:
+		side = -1.0
+
+	portrait.position = Vector2(
+		stage_position.x + (side * 68.0) - 24.0,
+		stage_position.y - 32.0
+	)
+
+	# Les adversaires verrouillés sont assombris.
+	if not stage.get("unlocked", false):
+		portrait.modulate = Color(0.45, 0.45, 0.45, 0.85)
+	
+	map_canvas.add_child(portrait)
+	portrait.reset_size()
+	portrait.size = Vector2(48, 64)

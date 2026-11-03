@@ -1,0 +1,88 @@
+{
+	"enemies": [
+	{
+		"id": "rival_explorer",
+		"name": "Alexandre Voss",
+		"type": "explorer",
+		"title": "L'explorateur rival",
+		"portrait": "res://assets/enemies/rival_explorer.png",
+		"description": "Un explorateur expérimenté prêt à tout pour découvrir la cité perdue.",
+		"dialogue_lines": [
+			"Tiens donc... Un autre aventurier !",
+			"Cette expédition est déjà la mienne. J'ai passé des mois à retrouver les traces de cette civilisation.",
+			"Je te conseille de rebrousser chemin avant qu'il ne soit trop tard."
+		],
+		"team_id": "enemy_team_01"
+	},
+	{
+		"id": "jade_guardian",
+		"name": "K'inich",
+		"type": "guardian",
+		"title": "Le gardien de jade",
+		"portrait": "res://assets/enemies/jade_guardian.png",
+		"description": "Un protecteur des anciennes ruines qui veille sur les vestiges de son peuple.",
+		"dialogue_lines": ["Étranger, tu avances sur une terre sacrée. Prouve que tes intentions sont dignes de franchir ces portes."],
+		"team_id": "enemy_team_02"
+	},
+	{
+		"id": "relic_hunter",
+		"name": "Maya Serrano",
+		"type": "explorer",
+		"title": "La chasseuse de reliques",
+		"portrait": "res://assets/enemies/relic_hunter.png",
+		"description": "Une chasseuse de trésors rusée qui recherche les artefacts les plus rares.",
+		"dialogue_lines": ["Je vois que nous avons les mêmes goûts ! Mais je suis arrivée la première. Cette relique sera à moi."],
+		"team_id": "enemy_team_03"
+	},
+	{
+		"id": "sun_priest",
+		"name": "Ahau",
+		"type": "guardian",
+		"title": "Le prêtre du soleil",
+		"portrait": "res://assets/enemies/sun_priest.png",
+		"description": "Un gardien du savoir ancien qui protège le temple du soleil.",
+		"dialogue_lines": ["Le soleil éclaire ceux qui savent respecter les anciens. Voyons si tu mérites de poursuivre ton chemin."],
+		"team_id": "enemy_team_04"
+	},
+	{
+		"id": "mercenary_captain",
+		"name": "Darius Blackwood",
+		"type": "explorer",
+		"title": "Le capitaine mercenaire",
+		"portrait": "res://assets/enemies/mercenary_captain.png",
+		"description": "Un chef de mercenaires uniquement intéressé par les richesses de la cité.",
+		"dialogue_lines": ["Je ne suis pas venu ici pour discuter. Donne-moi tes cartes et disparais de mon chemin !"],
+		"team_id": "enemy_team_05"
+	},
+	{
+		"id": "ancient_sentinel",
+		"name": "Balam",
+		"type": "guardian",
+		"title": "La sentinelle des anciens",
+		"portrait": "res://assets/enemies/ancient_sentinel.png",
+		"description": "Une sentinelle chargée de garder le passage vers les hauteurs.",
+		"dialogue_lines": ["Peu ont atteint ce lieu. Si tu souhaites continuer, tu devras montrer ta force."],
+		"team_id": "enemy_team_06"
+	},
+	{
+		"id": "high_priest",
+		"name": "Ix Chel",
+		"type": "guardian",
+		"title": "La grande prêtresse",
+		"portrait": "res://assets/enemies/high_priest.png",
+		"description": "La gardienne des secrets qui entourent la cité perdue.",
+		"dialogue_lines": ["Tu approches du dernier sanctuaire. Mais certains secrets doivent rester enfouis..."],
+		"team_id": "enemy_team_07"
+	},
+	{
+		"id": "forgotten_ruler",
+		"name": "Le souverain oublié",
+		"type": "boss",
+		"title": "Le dernier souverain",
+		"portrait": "res://assets/enemies/forgotten_ruler.png",
+		"description": "Le mystérieux protecteur de la cité perdue.",
+		"dialogue_lines": ["Tu as traversé mes terres, vaincu mes gardiens et défié les anciens. Te voici enfin devant le dernier rempart."],
+		"team_id": "enemy_team_08"
+	}
+	]
+}

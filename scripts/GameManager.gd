@@ -19,6 +19,7 @@ var recharge_ready_at: int = 0
 var recharge_paused: bool = false
 var characters_catalog: Dictionary = {}
 var techniques_catalog: Dictionary = {}
+var stages_catalog: Dictionary = {}
 var points: int = 0
 var collection: Array = []
 var next_instance_id: int = 1
@@ -182,6 +183,13 @@ func get_character_data(character_id: String) -> Dictionary:
 		return {}
 
 	return characters_catalog[character_id].duplicate(true)
+	
+# Permet de récupérer toutes les infos d'une figurine
+func get_stage_data(stage_id: String) -> Dictionary:
+	if not stages_catalog.has(stage_id):
+		return {}
+
+	return stages_catalog[stage_id].duplicate(true)
 
 # --------------------------------------------------
 # SAUVEGARDE
