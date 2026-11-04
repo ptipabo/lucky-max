@@ -4,6 +4,7 @@ extends Control
 const DOORS_GAME_SCENE = preload("res://scenes/DoorsGame.tscn")
 const ADVENTURE_MAP_SCENE = preload("res://scenes/adventure/AdventureMap.tscn")
 const ADVENTURE_DIALOGUE_SCENE = preload("res://scenes/adventure/AdventureDialogue.tscn")
+const CHARACTER_SELECTION_SCENE = preload("res://scenes/battle/CharacterSelection.tscn")
 const BG_COLOR := Color("54423bff")
 const PANEL_COLOR := Color("38305e00")
 const ACCENT_COLOR := Color("ffc83cff")
@@ -336,17 +337,11 @@ func _on_adventure_stage_selected(
 
 	var dialogue = ADVENTURE_DIALOGUE_SCENE.instantiate()
 
-	dialogue.set_anchors_and_offsets_preset(
-		Control.PRESET_FULL_RECT
-	)
+	dialogue.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
-	dialogue.dialogue_closed.connect(
-		_show_adventure
-	)
+	dialogue.dialogue_closed.connect(_show_adventure)
 
-	dialogue.duel_requested.connect(
-		_on_dialogue_duel_requested
-	)
+	dialogue.duel_requested.connect(_on_dialogue_duel_requested)
 
 	content.add_child(dialogue)
 
@@ -354,16 +349,25 @@ func _on_adventure_stage_selected(
 
 
 func _on_dialogue_duel_requested(enemy_id: String) -> void:
+	_clear_content()
 
-	print("Préparation du duel contre : ", enemy_id)
+	var selection = CHARACTER_SELECTION_SCENE.instantiate()
 
+	content.add_child(selection)
+
+	selection.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	selection.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	selection.size_flags_vertical = Control.SIZE_EXPAND_FILL
+
+	selection.team_confirmed.connect(_on_team_confirmed)
+
+	selection.configure(enemy_id)
+
+func _on_team_confirmed(enemy_id: String, selected_instance_ids: Array) -> void:
 	var dialog := AcceptDialog.new()
-	dialog.title = "Préparation du duel"
-	dialog.dialog_text = (
-		"Adversaire : " + enemy_id
-		+ "\n\nNous créerons prochainement l'écran de sélection des figurines."
-	)
-
+	dialog.title = "Équipe prête !"
+	dialog.dialog_text = "Tes 3 figurines sont sélectionnées.\n\nAdversaire : " + enemy_id
 	add_child(dialog)
 	dialog.popup_centered()
 
@@ -656,7 +660,7 @@ func _show_figurine_details(figurine: Dictionary) -> void:
 	
 	# Animation de flottement
 	var float_tween := create_tween()
-	float_tween.set_loops()
+	float_tween.set_loops(0)
 	float_tween.set_trans(Tween.TRANS_SINE)
 	float_tween.set_ease(Tween.EASE_IN_OUT)
 
@@ -666,12 +670,33 @@ func _show_figurine_details(figurine: Dictionary) -> void:
 		10.0,
 		1.0
 	)
+
 	float_tween.tween_property(
 		character_image,
 		"position:y",
 		22.0,
 		1.0
 	)
+	
+	float_tween.bind_node(character_image)
+	#var float_tween := create_tween()
+	#float_tween.set_loops(0)
+	#float_tween.set_trans(Tween.TRANS_SINE)
+	#float_tween.set_ease(Tween.EASE_IN_OUT)
+	#float_tween.bind_node(character_image)
+#
+	#float_tween.tween_property(
+		#character_image,
+		#"position:y",
+		#10.0,
+		#1.0
+	#)
+	#float_tween.tween_property(
+		#character_image,
+		#"position:y",
+		#22.0,
+		#1.0
+	#)
 
 	var rarity := Label.new()
 	rarity.text = "Rareté : " + _get_rarity_label(character.get("rarity", 0))

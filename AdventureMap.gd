@@ -231,12 +231,12 @@ func _load_stages_list() -> void:
 				push_warning("Identifiant de niveau d'aventure en double : " + stage_id)
 				continue
 		
-		print("Niveau d'aventure en cours de chargement : ", stage_counter)
+		#print("Niveau d'aventure en cours de chargement : ", stage_counter)
 		
 		stages_list += [stage]
 		
-	print("Niveaux d'aventure chargés : ", stages_list.size())
-	print(stages_list)
+	#print("Niveaux d'aventure chargés : ", stages_list.size())
+	#print(stages_list)
 
 func _layout_stages() -> void:
 	if map_canvas == null:
