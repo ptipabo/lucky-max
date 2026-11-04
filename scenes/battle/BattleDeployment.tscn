@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://dpes03pikxg8e"]
+
+[ext_resource type="Script" uid="uid://didbga6p7btap" path="res://scripts/battle/BattleDeployment.gd" id="1_deql3"]
+
+[node name="BattleDeployment" type="Control" unique_id=1060865159]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_deql3")
