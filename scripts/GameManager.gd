@@ -15,6 +15,7 @@ const RECHARGE_THRESHOLD: int = 10
 const RECHARGE_AMOUNT: int = 10
 const RECHARGE_DELAY_SECONDS: int = 15#300
 
+var save_load_valid: bool = true
 var recharge_ready_at: int = 0
 var recharge_paused: bool = false
 var characters_catalog: Dictionary = {}
@@ -28,6 +29,11 @@ func _ready() -> void:
 	load_characters_catalog()
 	load_techniques_catalog()
 	load_game()
+	
+	# Ne jamais sauvegarder si le chargement a échoué.
+	if not save_load_valid:
+		push_error("Le jeu est arrêté pour protéger la sauvegarde existante.")
+		return
 	
 	_update_recharge_schedule()
 	_save_game()
@@ -83,6 +89,7 @@ func add_figurine(character_id: String) -> Dictionary:
 	var figurine: Dictionary = {
 		"instance_id": next_instance_id,
 		"character_id": character_id,
+		"level": 1,
 		"acquired_at": Time.get_datetime_string_from_system(true)
 	}
 
@@ -217,23 +224,28 @@ func _save_game() -> void:
 # On récupère toutes les données de jeu du joueur depuis le fichier JSON
 func load_game() -> void:
 	if not FileAccess.file_exists(SAVE_PATH):
+		save_load_valid = true
 		points = 0
 		collection = []
 		next_instance_id = 1
 		_save_game()
 		return
-
+	
+	# Une sauvegarde existe : elle est considérée invalide
+	# tant que toutes les vérifications ne sont pas terminées.
+	save_load_valid = false
+	
 	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
-
+	
 	if file == null:
 		push_error("Impossible de lire la sauvegarde.")
 		return
-
+		
 	var content := file.get_as_text()
 	file.close()
-
+	
 	var parsed: Variant = JSON.parse_string(content)
-
+	
 	if not parsed is Dictionary:
 		push_error(
 			"Sauvegarde invalide : les données n'ont pas été chargées."
@@ -337,7 +349,31 @@ func load_game() -> void:
 
 		# Normaliser le type pour les prochaines sauvegardes.
 		item["instance_id"] = loaded_instance_id
+		
+		# Ajouter le niveau 1 aux anciennes figurines.
+		if not item.has("level"):
+			item["level"] = 1
 
+		# Vérifier le niveau enregistré.
+		var loaded_level: Variant = item["level"]
+
+		if typeof(loaded_level) == TYPE_FLOAT:
+			if (not is_finite(loaded_level) or loaded_level != floor(loaded_level)):
+				push_error("Le niveau d'une figurine est invalide.")
+				return
+			
+			loaded_level = int(loaded_level)
+		
+		elif typeof(loaded_level) != TYPE_INT:
+			push_error("Le niveau d'une figurine est invalide.")
+			return
+		
+		if loaded_level < 1 or loaded_level > 10:
+			push_error("Le niveau d'une figurine est invalide.")
+			return
+		
+		item["level"] = int(loaded_level)
+	
 	points = loaded_points
 	collection = loaded_collection.duplicate(true)
 	next_instance_id = loaded_next_id
@@ -351,6 +387,7 @@ func load_game() -> void:
 		)
 		
 	# Réécrire la sauvegarde avec les identifiants normalisés.
+	save_load_valid = true
 	_save_game()
 	
 	# On emet le signal disant que les points ont été modifiés et on précise leur nouveau montant
