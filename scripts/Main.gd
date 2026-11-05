@@ -1,10 +1,13 @@
 
 extends Control
 
+# Pré-chargement des différentes scènes
 const DOORS_GAME_SCENE = preload("res://scenes/DoorsGame.tscn")
 const ADVENTURE_MAP_SCENE = preload("res://scenes/adventure/AdventureMap.tscn")
 const ADVENTURE_DIALOGUE_SCENE = preload("res://scenes/adventure/AdventureDialogue.tscn")
 const CHARACTER_SELECTION_SCENE = preload("res://scenes/battle/CharacterSelection.tscn")
+const BATTLE_DEPLOYMENT_SCENE = preload("res://scenes/battle/BattleDeployment.tscn")
+
 const BG_COLOR := Color("54423bff")
 const PANEL_COLOR := Color("38305e00")
 const ACCENT_COLOR := Color("ffc83cff")
@@ -365,11 +368,17 @@ func _on_dialogue_duel_requested(enemy_id: String) -> void:
 	selection.configure(enemy_id)
 
 func _on_team_confirmed(enemy_id: String, selected_instance_ids: Array) -> void:
-	var dialog := AcceptDialog.new()
-	dialog.title = "Équipe prête !"
-	dialog.dialog_text = "Tes 3 figurines sont sélectionnées.\n\nAdversaire : " + enemy_id
-	add_child(dialog)
-	dialog.popup_centered()
+	_clear_content()
+	
+	var deployment = BATTLE_DEPLOYMENT_SCENE.instantiate()
+	
+	content.add_child(deployment)
+	
+	deployment.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	deployment.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	deployment.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	
+	deployment.configure(enemy_id, selected_instance_ids)
 
 # Génère la vue "Mini-jeux" contenant la liste de tous les mini-jeux
 func _show_games() -> void:
