@@ -7,12 +7,14 @@
 		"title": "L'explorateur rival",
 		"portrait": "res://assets/enemies/rival_explorer.png",
 		"description": "Un explorateur expérimenté prêt à tout pour découvrir la cité perdue.",
+		"strategy": "balanced",
 		"dialogue_lines": [
 			"Tiens donc... Un autre aventurier !",
 			"Cette expédition est déjà la mienne. J'ai passé des mois à retrouver les traces de cette civilisation.",
 			"Je te conseille de rebrousser chemin avant qu'il ne soit trop tard."
 		],
-		"team_id": "enemy_team_01"
+		"team_id": "enemy_team_01",
+		"team": ["cat_mage", "frog_king", "panda_ninja"]
 	},
 	{
 		"id": "jade_guardian",

@@ -6,7 +6,9 @@
 		"type": "action",
 		"description": "Soigne quelques PV.",
 		"icon": "heal.png",
-		"value": 30,
+		"value": 15,
+		"range": 1,
+		"side_effect": "",
 		"unity": "point"
 	},
 	{
@@ -15,7 +17,12 @@
 		"type": "action",
 		"description": "Brûle et fait perdre quelques PV à la cible.",
 		"icon": "fire.png",
-		"value": -10,
+		"value": -5,
+		"range": 2,
+		"side_effect": "burn",
+		"side_effect_chance": 0.3,
+		"side_effect_duration": -1,
+		"side_effect_power": 2,
 		"unity": "point"
 	},
 	{
@@ -43,6 +50,10 @@
 		"description": "Gèle et fait perdre quelques PV à la cible.",
 		"icon": "ice.png",
 		"value": -10,
+		"range": 2,
+		"side_effect": "freeze",
+		"side_effect_chance": 0.3,
+		"side_effect_duration": 2,
 		"unity": "point"
 	}
 	]

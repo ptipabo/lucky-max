@@ -1,6 +1,6 @@
 extends Control
 
-signal duel_requested(enemy_id: String)
+signal duel_requested(enemy_data: Dictionary)
 signal dialogue_closed
 
 var enemy_data: Dictionary = {}
@@ -226,7 +226,7 @@ func _on_next_pressed() -> void:
 # --------------------------------------------------
 
 func _request_duel() -> void:
-	duel_requested.emit(enemy_data.get("id", ""))
+	duel_requested.emit(enemy_data.duplicate(true))
 
 
 func _on_back_pressed() -> void:

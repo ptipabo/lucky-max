@@ -351,7 +351,7 @@ func _on_adventure_stage_selected(
 	dialogue.configure(enemy_data)
 
 
-func _on_dialogue_duel_requested(enemy_id: String) -> void:
+func _on_dialogue_duel_requested(enemy_data: Dictionary) -> void:
 	_clear_content()
 
 	var selection = CHARACTER_SELECTION_SCENE.instantiate()
@@ -365,9 +365,9 @@ func _on_dialogue_duel_requested(enemy_id: String) -> void:
 
 	selection.team_confirmed.connect(_on_team_confirmed)
 
-	selection.configure(enemy_id)
+	selection.configure(enemy_data)
 
-func _on_team_confirmed(enemy_id: String, selected_instance_ids: Array) -> void:
+func _on_team_confirmed(enemy_data: Dictionary, selected_instance_ids: Array) -> void:
 	_clear_content()
 	
 	var deployment = BATTLE_DEPLOYMENT_SCENE.instantiate()
@@ -378,7 +378,7 @@ func _on_team_confirmed(enemy_id: String, selected_instance_ids: Array) -> void:
 	deployment.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	deployment.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	
-	deployment.configure(enemy_id, selected_instance_ids)
+	deployment.configure(enemy_data, selected_instance_ids)
 
 # Génère la vue "Mini-jeux" contenant la liste de tous les mini-jeux
 func _show_games() -> void:

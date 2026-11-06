@@ -1,21 +1,66 @@
 extends Control
 
+signal starting_player_decided(player_starts: bool)
+
+enum BattlePhase { DEPLOYMENT, PLAYER_MOVEMENT, PLAYER_ACTIONS, ENEMY_TURN, FINISHED }
+
 const CELL_GAP := 2.0
 const BOARD_SIZE := 9
 const CENTER_COLUMN := 4
+const ATTACK_RANGE := 1
+const NO_PATH_DISTANCE := 100000
+const OBSTACLE_COUNT := 5
+const ENEMY_STEP_DURATION := 0.22
+const TECHNIQUE_SLOT_COUNT := 3
 
 var main_layout: VBoxContainer
 var board_grid: GridContainer
 var board_container: CenterContainer
+var opponent_heart_container: CenterContainer
 var opponent_lives_label: Label
 var player_lives_label: Label
 var player_figures_container: HBoxContainer
 var player_figure_slots: Array[Panel] = []
 var enemy_id: String = ""
+var enemy_data: Dictionary = {}
+var enemy_strategy: String = "balanced"
+var enemy_heart_attack_count: int = 0
+var enemy_figure_attack_count: int = 0
 var selected_instance_ids: Array = []
 var selected_figures: Array = []
+var enemy_figures: Array[Dictionary] = []
 var figures_layer: Control
+var enemy_figure_visuals: Array[TextureRect] = []
 var combat_button: Button
+var combat_button_spacer: Control
+var starting_player_dialog: AcceptDialog
+var player_starts: bool = false
+var current_phase: int = BattlePhase.DEPLOYMENT
+var turn_status_label: Label
+var unit_health: Dictionary = {}
+var enemy_figure_positions: Dictionary = {}
+var player_move_points_used: Dictionary = {}
+var reachable_cell_costs: Dictionary = {}
+var obstacle_positions: Dictionary = {}
+var player_acted: Dictionary = {}
+var defending_units: Dictionary = {}
+var status_effects: Dictionary = {}
+var selected_actor_id: int = -1
+var pending_action: String = ""
+var reachable_cells: Array[Vector2i] = []
+var player_heart_lives: int = 3
+var opponent_heart_lives: int = 3
+var unit_max_health: Dictionary = {}
+var turn_controls: VBoxContainer
+var action_controls: VBoxContainer
+var selected_actor_label: Label
+var phase_button: Button
+var attack_button: Button
+var technique_row: HBoxContainer
+var technique_buttons: Array[Button] = []
+var cancel_action_button: Button
+var combat_message_label: Label
+var combat_message_timer: Timer
 
 # Positions des figurines déjà placées.
 # Clé : instance_id / Valeur : Vector2i(ligne, colonne)
@@ -67,6 +112,11 @@ func _build_interface() -> void:
 	opponent_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	main_layout.add_child(opponent_label)
 
+	opponent_heart_container = CenterContainer.new()
+	opponent_heart_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	opponent_heart_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	main_layout.add_child(opponent_heart_container)
+
 	opponent_lives_label = Label.new()
 	opponent_lives_label.text = "♥ ♥ ♥"
 	opponent_lives_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -74,8 +124,11 @@ func _build_interface() -> void:
 	opponent_lives_label.add_theme_color_override(
 		"font_color", Color("#E85B5B")
 	)
-	opponent_lives_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	main_layout.add_child(opponent_lives_label)
+	opponent_lives_label.z_index = 100
+	opponent_lives_label.z_as_relative = false
+	opponent_lives_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	opponent_lives_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	opponent_heart_container.add_child(opponent_lives_label)
 
 	# Plateau carré.
 	board_container = CenterContainer.new()
@@ -106,6 +159,7 @@ func _build_interface() -> void:
 	board_container.add_child(figures_layer)
 
 	_create_board()
+	_create_obstacles()
 	# Cette ligne permet d'attendre que Godot ait attribué leurs dimensions aux conteneurs avant de
 	# calculer la taille des cases.
 	call_deferred("_update_board_size")
@@ -118,6 +172,8 @@ func _build_interface() -> void:
 	player_lives_label.add_theme_color_override(
 		"font_color", Color("#E85B5B")
 	)
+	player_lives_label.mouse_filter = Control.MOUSE_FILTER_STOP
+	player_lives_label.gui_input.connect(_on_heart_input.bind(false))
 	player_lives_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	main_layout.add_child(player_lives_label)
 
@@ -129,6 +185,12 @@ func _build_interface() -> void:
 	)
 	player_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	main_layout.add_child(player_label)
+
+	combat_message_timer = Timer.new()
+	combat_message_timer.one_shot = true
+	combat_message_timer.wait_time = 1.8
+	combat_message_timer.timeout.connect(_on_combat_message_timeout)
+	add_child(combat_message_timer)
 	
 	# Barre des figurines du joueur.
 	player_figures_container = HBoxContainer.new()
@@ -171,10 +233,44 @@ func _create_board() -> void:
 			style.border_color = Color("#253F32")
 
 			cell.add_theme_stylebox_override("panel", style)
+			cell.set_meta("base_style", style.duplicate())
 
 			board_grid.add_child(cell)
 			
 			cell.gui_input.connect(_on_cell_input.bind(row, column))
+
+func _create_obstacles() -> void:
+	var candidates: Array[Vector2i] = []
+	for row in range(2, 7):
+		for column in range(BOARD_SIZE):
+			if column != CENTER_COLUMN:
+				candidates.append(Vector2i(row, column))
+
+	for index in range(mini(OBSTACLE_COUNT, candidates.size())):
+		var swap_index := randi_range(index, candidates.size() - 1)
+		var candidate := candidates[index]
+		candidates[index] = candidates[swap_index]
+		candidates[swap_index] = candidate
+
+		var position: Vector2i = candidates[index]
+		obstacle_positions[position] = true
+		var cell_index: int = position.x * BOARD_SIZE + position.y
+		var cell := board_grid.get_child(cell_index) as Panel
+		var obstacle := Panel.new()
+		obstacle.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		obstacle.offset_left = 5
+		obstacle.offset_top = 5
+		obstacle.offset_right = -5
+		obstacle.offset_bottom = -5
+		obstacle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color("#766B54")
+		style.border_color = Color("#403A2F")
+		style.set_border_width_all(2)
+		style.set_corner_radius_all(5)
+		obstacle.add_theme_stylebox_override("panel", style)
+		cell.add_child(obstacle)
 
 func _update_board_size() -> void:
 	if main_layout == null or board_container == null or board_grid == null:
@@ -224,6 +320,8 @@ func _update_board_size() -> void:
 	if cell_size <= 0:
 		return
 
+	opponent_lives_label.custom_minimum_size.x = cell_size
+
 	for cell in board_grid.get_children():
 		cell.custom_minimum_size = Vector2(cell_size, cell_size)
 	
@@ -253,12 +351,46 @@ func _create_player_figure_slots() -> void:
 		
 		slot.gui_input.connect(_on_figure_slot_input.bind(i))
 
-func configure(opponent_id: String, instance_ids: Array) -> void:
-	enemy_id = opponent_id
+func configure(opponent: Dictionary, instance_ids: Array) -> void:
+	enemy_data = opponent.duplicate(true)
+	enemy_id = str(enemy_data.get("id", ""))
+	enemy_strategy = str(enemy_data.get("strategy", "balanced"))
+	if not ["figures_only", "heart_only", "balanced"].has(enemy_strategy):
+		push_warning("Stratégie inconnue pour " + enemy_id + "; stratégie équilibrée utilisée.")
+		enemy_strategy = "balanced"
+	enemy_heart_attack_count = 0
+	enemy_figure_attack_count = 0
 	selected_instance_ids = instance_ids.duplicate()
 
 	var collection: Array = GameManager.get_collection()
 	selected_figures.clear()
+	enemy_figures.clear()
+	enemy_figure_positions.clear()
+
+	var enemy_team: Variant = enemy_data.get("team", [])
+	if enemy_team is Array:
+		for character_id in enemy_team:
+			var character_data: Dictionary = GameManager.get_character_data(
+				str(character_id)
+			)
+			if character_data.is_empty():
+				push_warning("Personnage ennemi introuvable : " + str(character_id))
+				continue
+
+			var enemy_instance_id := -(enemy_figures.size() + 1)
+			var enemy_columns: Array[int] = [1, 4, 7]
+			enemy_figures.append({
+				"instance_id": enemy_instance_id,
+				"character_id": str(character_id),
+				"level": 1,
+				"data": character_data
+			})
+			enemy_figure_positions[enemy_instance_id] = Vector2i(
+				1,
+				enemy_columns[enemy_figures.size() - 1]
+			)
+	else:
+		push_warning("L'équipe de l'adversaire est invalide : " + enemy_id)
 
 	for instance_id in selected_instance_ids:
 		for figurine in collection:
@@ -277,6 +409,13 @@ func configure(opponent_id: String, instance_ids: Array) -> void:
 				break
 	
 	_refresh_player_figure_slots()
+	call_deferred("_update_board_size")
+
+func _get_player_figure(instance_id: int) -> Dictionary:
+	for figure in selected_figures:
+		if int(figure.get("instance_id", -1)) == instance_id:
+			return figure
+	return {}
 
 func _refresh_player_figure_slots() -> void:
 	for i in range(player_figure_slots.size()):
@@ -342,6 +481,23 @@ func _align_figures_layer() -> void:
 
 	figures_layer.position = board_grid.position
 	figures_layer.size = board_grid.size
+	_refresh_player_figure_visuals()
+	_refresh_enemy_figure_visuals()
+
+func _refresh_player_figure_visuals() -> void:
+	var placed_instance_ids: Array = player_figure_positions.keys()
+	for instance_id in placed_instance_ids:
+		var sprite: TextureRect = figure_visuals.get(int(instance_id))
+		if sprite != null and is_instance_valid(sprite):
+			sprite.queue_free()
+		figure_visuals.erase(int(instance_id))
+
+	for instance_id in placed_instance_ids:
+		var figure := _get_player_figure(int(instance_id))
+		if figure.is_empty():
+			continue
+		var position: Vector2i = player_figure_positions[instance_id]
+		_create_figure_visual(figure, position.x, position.y)
 
 func _get_cell_center(row: int, column: int) -> Vector2:
 	if board_grid == null or board_grid.get_child_count() == 0:
@@ -360,12 +516,13 @@ func _get_cell_center(row: int, column: int) -> Vector2:
 func _create_figure_visual(
 	figure: Dictionary,
 	row: int,
-	column: int
+	column: int,
+	is_player_figure: bool = true
 ) -> void:
 
 	var instance_id: int = int(figure.get("instance_id", -1))
 
-	if instance_id < 0 or figures_layer == null:
+	if (is_player_figure and instance_id < 0) or figures_layer == null:
 		return
 
 	var character_data: Dictionary = figure.get("data", {})
@@ -399,8 +556,12 @@ func _create_figure_visual(
 	sprite.texture = texture
 	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	sprite.mouse_filter = Control.MOUSE_FILTER_STOP
-	sprite.gui_input.connect(_on_placed_figure_input.bind(instance_id))
+	if is_player_figure:
+		sprite.mouse_filter = Control.MOUSE_FILTER_STOP
+		sprite.gui_input.connect(_on_placed_figure_input.bind(instance_id))
+	else:
+		sprite.mouse_filter = Control.MOUSE_FILTER_STOP
+		sprite.gui_input.connect(_on_enemy_figure_input.bind(instance_id))
 
 	sprite.size = Vector2(sprite_width, sprite_height)
 
@@ -410,14 +571,69 @@ func _create_figure_visual(
 		cell_center.y + cell_size / 2.0 - sprite_height
 	)
 
+	var health_bar := ProgressBar.new()
+	health_bar.name = "HealthBar"
+	health_bar.min_value = 0
+	var max_health := int(character_data.get("stats", {}).get("lifepoints", 1))
+	health_bar.max_value = max_health
+	health_bar.value = unit_health.get(instance_id, max_health)
+	health_bar.show_percentage = false
+	health_bar.z_index = 100
+	health_bar.z_as_relative = false
+	health_bar.size = Vector2(sprite_width * 0.7, 7)
+	health_bar.position = Vector2(
+		(sprite_width - health_bar.size.x) / 2.0,
+		sprite_height - health_bar.size.y - 4
+	)
+	health_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var health_background := StyleBoxFlat.new()
+	health_background.bg_color = Color("#202A24")
+	health_bar.add_theme_stylebox_override("background", health_background)
+	var health_fill := StyleBoxFlat.new()
+	health_fill.bg_color = (
+		Color("#8BC56A")
+		if is_player_figure
+		else Color("#E85B5B")
+	)
+	health_bar.add_theme_stylebox_override("fill", health_fill)
+	sprite.add_child(health_bar)
+
 	# Les figurines situées plus bas passent devant.
 	sprite.z_index = row
 
 	figures_layer.add_child(sprite)
 
-	# Mémorisation de l'illustration et de sa position.
-	figure_visuals[instance_id] = sprite
-	player_figure_positions[instance_id] = Vector2i(row, column)
+	if is_player_figure:
+		figure_visuals[instance_id] = sprite
+		player_figure_positions[instance_id] = Vector2i(row, column)
+	else:
+		enemy_figure_visuals.append(sprite)
+		figure_visuals[instance_id] = sprite
+		enemy_figure_positions[instance_id] = Vector2i(row, column)
+
+func _refresh_enemy_figure_visuals() -> void:
+	for sprite in enemy_figure_visuals:
+		if is_instance_valid(sprite):
+			sprite.queue_free()
+	enemy_figure_visuals.clear()
+	for figure in enemy_figures:
+		figure_visuals.erase(int(figure.get("instance_id", -1)))
+
+	if enemy_figures.is_empty() or board_grid.get_child_count() == 0:
+		return
+
+	if board_grid.get_child(0).size.x <= 0:
+		return
+
+	for figure in enemy_figures:
+		var instance_id := int(figure.get("instance_id", -1))
+		if not enemy_figure_positions.has(instance_id):
+			continue
+		var position: Vector2i = enemy_figure_positions.get(
+			instance_id,
+			Vector2i(1, 4)
+		)
+		_create_figure_visual(figure, position.x, position.y, false)
 
 func _on_figure_slot_input(event: InputEvent, slot_index: int) -> void:
 	if deployment_confirmed:
@@ -498,6 +714,28 @@ func _start_figure_drag(figure: Dictionary, pointer_position: Vector2) -> void:
 	)
 
 func _input(event: InputEvent) -> void:
+	var pointer_position := Vector2.ZERO
+	var is_pointer_press := false
+
+	if event is InputEventMouseButton:
+		is_pointer_press = (
+			event.button_index == MOUSE_BUTTON_LEFT
+			and event.pressed
+		)
+		pointer_position = event.position
+	elif event is InputEventScreenTouch:
+		is_pointer_press = event.pressed
+		pointer_position = event.position
+
+	if (
+		is_pointer_press
+		and opponent_lives_label != null
+		and _get_opponent_heart_hitbox().has_point(pointer_position)
+	):
+		_on_heart_input(event, true)
+		get_viewport().set_input_as_handled()
+		return
+
 	if not is_dragging_figure or drag_preview == null:
 		return
 
@@ -537,6 +775,23 @@ func _input(event: InputEvent) -> void:
 	if pointer_released:
 		_drop_figure_on_board(drag_pointer_position)
 
+func _get_opponent_heart_hitbox() -> Rect2:
+	if (
+		opponent_heart_container == null
+		or opponent_lives_label == null
+		or board_grid == null
+		or board_grid.get_child_count() == 0
+	):
+		return Rect2()
+
+	var cell_size: float = board_grid.get_child(0).size.x
+	var label_rect := opponent_lives_label.get_global_rect()
+	var center_x: float = opponent_heart_container.get_global_rect().get_center().x
+	return Rect2(
+		Vector2(center_x - cell_size / 2.0, label_rect.position.y),
+		Vector2(cell_size, label_rect.size.y)
+	)
+
 func _cancel_figure_drag() -> void:
 	if drag_preview != null:
 		drag_preview.queue_free()
@@ -563,9 +818,13 @@ func _drop_figure_on_board(global_position: Vector2) -> void:
 	var column := int(floor(local_position.x / cell_step))
 	var row := int(floor(local_position.y / cell_step))
 
+	var valid_row := (
+		row >= 7 and row <= 8
+		if current_phase == BattlePhase.DEPLOYMENT
+		else reachable_cells.has(Vector2i(row, column))
+	)
 	var valid_position := (
-		row >= 7
-		and row <= 8
+		valid_row
 		and column >= 0
 		and column < BOARD_SIZE
 		and local_position.x >= 0
@@ -582,10 +841,14 @@ func _drop_figure_on_board(global_position: Vector2) -> void:
 				occupied_instance_id = int(id)
 				break
 
-		# Une figurine venant du bas ne peut pas échanger
-		# sa place avec une figurine déjà posée.
-		if occupied_instance_id != -1 and not drag_origin_was_placed:
-			valid_position = false
+		if occupied_instance_id != -1:
+			if current_phase == BattlePhase.PLAYER_MOVEMENT or not drag_origin_was_placed:
+				valid_position = false
+
+		for id in enemy_figure_positions:
+			var enemy_position: Vector2i = enemy_figure_positions[id]
+			if enemy_position == Vector2i(row, column):
+				valid_position = false
 
 	if valid_position:
 		var figure: Dictionary = {}
@@ -597,6 +860,10 @@ func _drop_figure_on_board(global_position: Vector2) -> void:
 
 		if not figure.is_empty():
 			var was_placed := drag_origin_was_placed
+			var moved_instance_id := dragged_instance_id
+			var movement_cost := int(
+				reachable_cell_costs.get(Vector2i(row, column), 0)
+			)
 			var old_position: Vector2i = Vector2i(-1, -1)
 
 			if was_placed:
@@ -625,8 +892,14 @@ func _drop_figure_on_board(global_position: Vector2) -> void:
 					player_figure_positions.erase(occupied_instance_id)
 
 			_cancel_figure_drag()
+			_clear_movement_highlights()
 
 			_create_figure_visual(figure, row, column)
+			if current_phase == BattlePhase.PLAYER_MOVEMENT:
+				player_move_points_used[moved_instance_id] = (
+					int(player_move_points_used.get(moved_instance_id, 0))
+					+ movement_cost
+				)
 
 			if not exchanged_figure.is_empty() and was_placed:
 				_create_figure_visual(
@@ -639,10 +912,116 @@ func _drop_figure_on_board(global_position: Vector2) -> void:
 			return
 
 	# Dépôt invalide : la figurine retourne à son emplacement initial.
+	_clear_movement_highlights()
 	_cancel_figure_drag()
 
+func _get_reachable_cells(
+	start: Vector2i,
+	move_points: int,
+	actor_id: int
+) -> Array[Vector2i]:
+	var reachable: Array[Vector2i] = []
+	reachable_cell_costs.clear()
+	var pending: Array[Vector2i] = [start]
+	var distance_by_cell: Dictionary = {start: 0}
+	var directions: Array[Vector2i] = [
+		Vector2i(0, -1),
+		Vector2i(0, 1),
+		Vector2i(-1, 0),
+		Vector2i(1, 0)
+	]
+
+	while not pending.is_empty():
+		var current: Vector2i = pending.pop_front()
+		var next_distance: int = int(distance_by_cell[current]) + 1
+		if next_distance > move_points:
+			continue
+
+		for direction in directions:
+			var next_cell: Vector2i = current + direction
+			if (
+				next_cell.x < 0 or next_cell.x >= BOARD_SIZE
+				or next_cell.y < 0 or next_cell.y >= BOARD_SIZE
+				or distance_by_cell.has(next_cell)
+				or _is_position_occupied(
+					next_cell,
+					actor_id,
+					_can_pass_obstacles(actor_id)
+				)
+			):
+				continue
+
+			distance_by_cell[next_cell] = next_distance
+			reachable_cell_costs[next_cell] = next_distance
+			reachable.append(next_cell)
+			pending.append(next_cell)
+
+	return reachable
+
+func _get_move_points(figure: Dictionary) -> int:
+	if _has_status_effect(int(figure.get("instance_id", -1)), "freeze"):
+		return 0
+	var stats: Dictionary = figure.get("data", {}).get("stats", {})
+	var move_points := int(stats.get("moves", 1))
+	for technique_id in stats.get("techniques", []):
+		var technique: Dictionary = GameManager.techniques_catalog.get(
+			str(technique_id),
+			{}
+		)
+		if technique.get("type", "") == "move":
+			move_points += int(technique.get("value", 0))
+	return maxi(0, move_points)
+
+func _is_position_occupied(
+	position: Vector2i,
+	ignored_instance_id: int,
+	can_pass_obstacles: bool = false
+) -> bool:
+	for instance_id in player_figure_positions:
+		if int(instance_id) == ignored_instance_id:
+			continue
+		if player_figure_positions[instance_id] == position:
+			return true
+
+	for instance_id in enemy_figure_positions:
+		if int(instance_id) == ignored_instance_id:
+			continue
+		if enemy_figure_positions[instance_id] == position:
+			return true
+
+	if not can_pass_obstacles and obstacle_positions.has(position):
+		return true
+
+	return false
+
+func _can_pass_obstacles(instance_id: int) -> bool:
+	var figure := _get_unit_figure(instance_id)
+	var stats: Dictionary = figure.get("data", {}).get("stats", {})
+	return stats.get("techniques", []).has("ignore_walls")
+
+func _highlight_movement_cells() -> void:
+	for position in reachable_cells:
+		var cell_index: int = position.x * BOARD_SIZE + position.y
+		var cell := board_grid.get_child(cell_index) as Panel
+		var style: StyleBoxFlat = cell.get_meta("base_style").duplicate()
+		style.bg_color = Color("#B3C96A")
+		cell.add_theme_stylebox_override("panel", style)
+
+func _clear_movement_highlights() -> void:
+	reachable_cells.clear()
+	reachable_cell_costs.clear()
+	for cell in board_grid.get_children():
+		cell.add_theme_stylebox_override("panel", cell.get_meta("base_style"))
+
 func _on_placed_figure_input(event: InputEvent, instance_id: int) -> void:
-	if deployment_confirmed:
+	if current_phase == BattlePhase.PLAYER_MOVEMENT:
+		pass
+	elif current_phase == BattlePhase.PLAYER_ACTIONS:
+		pass
+	elif current_phase == BattlePhase.DEPLOYMENT:
+		if deployment_confirmed:
+			return
+	else:
 		return
 	
 	if is_dragging_figure:
@@ -661,6 +1040,37 @@ func _on_placed_figure_input(event: InputEvent, instance_id: int) -> void:
 		pointer_position = event.position
 
 	else:
+		return
+
+	if current_phase == BattlePhase.PLAYER_MOVEMENT:
+		var start: Vector2i = player_figure_positions.get(
+			instance_id,
+			Vector2i(-1, -1)
+		)
+		var figure: Dictionary = _get_player_figure(instance_id)
+		if start.x < 0 or figure.is_empty():
+			return
+		reachable_cells = _get_reachable_cells(
+			start,
+			maxi(
+				0,
+				_get_move_points(figure)
+				- int(player_move_points_used.get(instance_id, 0))
+			),
+			instance_id
+		)
+		_highlight_movement_cells()
+		turn_status_label.text = "%d PM restants" % maxi(
+			0,
+			_get_move_points(figure)
+			- int(player_move_points_used.get(instance_id, 0))
+		)
+
+	if current_phase == BattlePhase.PLAYER_ACTIONS:
+		if pending_action.is_empty():
+			_select_player_actor(instance_id)
+		else:
+			_resolve_character_action(instance_id)
 		return
 
 	var figure: Dictionary = {}
@@ -683,6 +1093,12 @@ func _on_placed_figure_input(event: InputEvent, instance_id: int) -> void:
 	_update_combat_button()
 
 func _create_combat_button() -> void:
+	starting_player_dialog = AcceptDialog.new()
+	starting_player_dialog.title = "Tirage au sort"
+	starting_player_dialog.dialog_text = ""
+	starting_player_dialog.confirmed.connect(_begin_combat)
+	add_child(starting_player_dialog)
+
 	combat_button = Button.new()
 	combat_button.text = "COMBAT !"
 	combat_button.custom_minimum_size = Vector2(0, 48)
@@ -697,7 +1113,8 @@ func _update_combat_button() -> void:
 		return
 
 	combat_button.visible = (
-		player_figure_positions.size() == 3
+		current_phase == BattlePhase.DEPLOYMENT
+		and player_figure_positions.size() == 3
 		and not is_dragging_figure
 	)
 
@@ -705,6 +1122,9 @@ var deployment_confirmed: bool = false
 
 
 func _on_combat_button_pressed() -> void:
+	if deployment_confirmed:
+		return
+
 	if player_figure_positions.size() != 3:
 		return
 
@@ -714,6 +1134,1006 @@ func _on_combat_button_pressed() -> void:
 	deployment_confirmed = true
 	combat_button.disabled = true
 	combat_button.text = "DÉPLOIEMENT VALIDÉ !"
+	player_starts = randi_range(0, 1) == 0
+	starting_player_dialog.dialog_text = (
+		"Pile ! Tu commences."
+		if player_starts
+		else "Face ! L'adversaire commence."
+	)
+	starting_player_dialog.popup_centered(Vector2i(320, 160))
+	starting_player_decided.emit(player_starts)
 
 	print("Déploiement confirmé !")
 	print("Positions des figurines : ", player_figure_positions)
+	print("Le joueur commence : ", player_starts)
+
+func _begin_combat() -> void:
+	if current_phase != BattlePhase.DEPLOYMENT:
+		return
+
+	for slot in player_figure_slots:
+		slot.visible = false
+	_create_combat_controls()
+	if combat_button_spacer == null:
+		var button_index := combat_button.get_index()
+		combat_button_spacer = Control.new()
+		combat_button_spacer.custom_minimum_size = combat_button.custom_minimum_size
+		combat_button_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		main_layout.add_child(combat_button_spacer)
+		main_layout.move_child(combat_button_spacer, button_index)
+
+	current_phase = (
+		BattlePhase.PLAYER_MOVEMENT
+		if player_starts
+		else BattlePhase.ENEMY_TURN
+	)
+	combat_button.visible = false
+	turn_status_label.visible = true
+	unit_health.clear()
+
+	for figure in selected_figures:
+		var instance_id := int(figure.get("instance_id", -1))
+		var stats: Dictionary = figure.get("data", {}).get("stats", {})
+		var max_health := int(stats.get("lifepoints", 1))
+		unit_health[instance_id] = max_health
+		unit_max_health[instance_id] = max_health
+
+	for figure in enemy_figures:
+		var instance_id := int(figure.get("instance_id", -1))
+		var stats: Dictionary = figure.get("data", {}).get("stats", {})
+		var max_health := int(stats.get("lifepoints", 1))
+		unit_health[instance_id] = max_health
+		unit_max_health[instance_id] = max_health
+		_update_unit_health_display(instance_id)
+
+	if player_starts:
+		turn_status_label.text = "Tour du joueur : déplacements"
+	else:
+		turn_status_label.text = "Tour de l'adversaire"
+	_update_combat_ui()
+	player_move_points_used.clear()
+	player_acted.clear()
+	if not player_starts:
+		call_deferred("_run_enemy_turn")
+
+func _create_combat_controls() -> void:
+	turn_controls = VBoxContainer.new()
+	turn_controls.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	turn_controls.offset_left = 14
+	turn_controls.offset_right = -14
+	turn_controls.offset_top = -190
+	turn_controls.offset_bottom = -12
+	turn_controls.add_theme_constant_override("separation", 4)
+	turn_controls.visible = false
+	add_child(turn_controls)
+
+	turn_status_label = Label.new()
+	turn_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	turn_status_label.add_theme_color_override("font_color", Color("#F2D58B"))
+	turn_controls.add_child(turn_status_label)
+
+	combat_message_label = Label.new()
+	combat_message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	combat_message_label.add_theme_color_override("font_color", Color("#FFC83C"))
+	combat_message_label.visible = false
+	turn_controls.add_child(combat_message_label)
+
+	action_controls = VBoxContainer.new()
+	action_controls.add_theme_constant_override("separation", 6)
+	turn_controls.add_child(action_controls)
+
+	selected_actor_label = Label.new()
+	selected_actor_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	selected_actor_label.add_theme_color_override("font_color", Color("#F2D58B"))
+	action_controls.add_child(selected_actor_label)
+
+	attack_button = Button.new()
+	attack_button.text = "⚔ Attaque"
+	attack_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	attack_button.pressed.connect(_on_attack_pressed)
+	_apply_action_button_style(attack_button)
+	action_controls.add_child(attack_button)
+
+	technique_row = HBoxContainer.new()
+	technique_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	technique_row.add_theme_constant_override("separation", 6)
+	action_controls.add_child(technique_row)
+	technique_buttons.clear()
+	for index in range(TECHNIQUE_SLOT_COUNT):
+		var technique_button := Button.new()
+		technique_button.custom_minimum_size = Vector2(48, 48)
+		technique_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		technique_button.add_theme_font_size_override("font_size", 24)
+		technique_button.set_meta("technique_id", "")
+		technique_button.pressed.connect(
+			_on_technique_button_pressed.bind(index)
+		)
+		_apply_action_button_style(technique_button)
+		technique_row.add_child(technique_button)
+		technique_buttons.append(technique_button)
+
+	cancel_action_button = Button.new()
+	cancel_action_button.text = "Annuler"
+	cancel_action_button.pressed.connect(_on_cancel_action_pressed)
+	_apply_action_button_style(cancel_action_button)
+	action_controls.add_child(cancel_action_button)
+
+	var phase_button_margin := MarginContainer.new()
+	phase_button_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	phase_button_margin.add_theme_constant_override("margin_bottom", 8)
+	turn_controls.add_child(phase_button_margin)
+
+	phase_button = Button.new()
+	phase_button.custom_minimum_size.y = 42
+	phase_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	phase_button.pressed.connect(_on_phase_button_pressed)
+	_apply_action_button_style(phase_button)
+	phase_button_margin.add_child(phase_button)
+
+func _apply_action_button_style(button: Button) -> void:
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color("#54423B")
+	normal.border_color = Color("#FFC83C")
+	normal.set_border_width_all(2)
+	normal.set_corner_radius_all(18)
+	normal.set_content_margin_all(8)
+	button.add_theme_stylebox_override("normal", normal)
+
+	var hover: StyleBoxFlat = normal.duplicate()
+	hover.bg_color = Color("#675247")
+	button.add_theme_stylebox_override("hover", hover)
+
+	var pressed: StyleBoxFlat = normal.duplicate()
+	pressed.bg_color = Color("#3B302A")
+	button.add_theme_stylebox_override("pressed", pressed)
+	button.add_theme_color_override("font_color", Color("#FFC83C"))
+	button.add_theme_color_override("font_hover_color", Color("#FFF2D5"))
+
+func _update_combat_ui() -> void:
+	if turn_controls == null:
+		return
+
+	player_lives_label.text = _format_hearts(player_heart_lives)
+	opponent_lives_label.text = _format_hearts(opponent_heart_lives)
+	var is_player_turn := (
+		current_phase == BattlePhase.PLAYER_MOVEMENT
+		or current_phase == BattlePhase.PLAYER_ACTIONS
+	)
+	var battle_active := (
+		current_phase != BattlePhase.DEPLOYMENT
+		and current_phase != BattlePhase.FINISHED
+	)
+	turn_controls.visible = battle_active
+	phase_button.visible = is_player_turn
+	phase_button.text = (
+		"Passer aux actions"
+		if current_phase == BattlePhase.PLAYER_MOVEMENT
+		else "Fin du tour"
+	)
+	var can_act: bool = (
+		current_phase == BattlePhase.PLAYER_ACTIONS
+		and selected_actor_id > 0
+		and not bool(player_acted.get(selected_actor_id, false))
+	)
+	action_controls.visible = battle_active
+	selected_actor_label.visible = can_act
+	attack_button.disabled = not can_act or not pending_action.is_empty()
+	for technique_button in technique_buttons:
+		technique_button.disabled = (
+			not can_act
+			or not pending_action.is_empty()
+			or str(technique_button.get_meta("technique_id", "")).is_empty()
+		)
+	cancel_action_button.visible = not pending_action.is_empty()
+
+	if current_phase == BattlePhase.PLAYER_MOVEMENT:
+		turn_status_label.text = "Tour du joueur : déplacements"
+	elif current_phase == BattlePhase.PLAYER_ACTIONS:
+		turn_status_label.text = (
+			"Choisis une cible"
+			if not pending_action.is_empty()
+			else "Actions : sélectionne une figurine"
+		)
+	elif current_phase == BattlePhase.ENEMY_TURN:
+		turn_status_label.text = "Tour de l'adversaire"
+	elif current_phase == BattlePhase.FINISHED:
+		turn_controls.visible = false
+
+func _on_phase_button_pressed() -> void:
+	if current_phase == BattlePhase.PLAYER_MOVEMENT:
+		_clear_movement_highlights()
+		current_phase = BattlePhase.PLAYER_ACTIONS
+		selected_actor_id = -1
+		pending_action = ""
+	elif current_phase == BattlePhase.PLAYER_ACTIONS:
+		for instance_id in player_figure_positions:
+			if not bool(player_acted.get(instance_id, false)):
+				defending_units[instance_id] = true
+		_tick_side_effects(true)
+		if _check_battle_over():
+			return
+		current_phase = BattlePhase.ENEMY_TURN
+		selected_actor_id = -1
+		pending_action = ""
+	_update_combat_ui()
+	if current_phase == BattlePhase.ENEMY_TURN:
+		call_deferred("_run_enemy_turn")
+
+func _select_player_actor(instance_id: int) -> void:
+	if not player_figure_positions.has(instance_id):
+		return
+	if player_acted.get(instance_id, false):
+		return
+
+	selected_actor_id = instance_id
+	var figure := _get_player_figure(instance_id)
+	selected_actor_label.text = str(
+		figure.get("data", {}).get("name", "Figurine")
+	)
+	_populate_technique_buttons(instance_id)
+	_update_combat_ui()
+
+func _populate_technique_buttons(instance_id: int) -> void:
+	for button in technique_buttons:
+		button.set_meta("technique_id", "")
+		button.text = ""
+		button.tooltip_text = ""
+		button.disabled = true
+
+	var figure := _get_player_figure(instance_id)
+	var stats: Dictionary = figure.get("data", {}).get("stats", {})
+	var slot_index := 0
+	for technique_id in stats.get("techniques", []):
+		var technique: Dictionary = GameManager.techniques_catalog.get(
+			str(technique_id),
+			{}
+		)
+		if technique.get("type", "") != "action":
+			continue
+		if slot_index >= technique_buttons.size():
+			break
+		var button: Button = technique_buttons[slot_index]
+		button.set_meta("technique_id", str(technique_id))
+		button.text = _get_technique_emoji(str(technique_id))
+		button.tooltip_text = str(technique.get("name", technique_id))
+		button.disabled = false
+		slot_index += 1
+
+func _get_technique_emoji(technique_id: String) -> String:
+	match technique_id:
+		"fire":
+			return "🔥"
+		"heal":
+			return "💚"
+		"ice":
+			return "❄"
+		"extra_move":
+			return "👟"
+		_:
+			return "✨"
+
+func _on_attack_pressed() -> void:
+	if selected_actor_id <= 0:
+		return
+	pending_action = "attack"
+	_update_combat_ui()
+
+func _on_technique_button_pressed(index: int) -> void:
+	if index < 0 or index >= technique_buttons.size() or selected_actor_id <= 0:
+		return
+	pending_action = str(technique_buttons[index].get_meta("technique_id", ""))
+	if pending_action.is_empty():
+		return
+	_update_combat_ui()
+
+func _on_cancel_action_pressed() -> void:
+	pending_action = ""
+	_update_combat_ui()
+
+func _on_enemy_figure_input(event: InputEvent, instance_id: int) -> void:
+	if current_phase != BattlePhase.PLAYER_ACTIONS or pending_action.is_empty():
+		return
+	if event is InputEventMouseButton:
+		if event.button_index != MOUSE_BUTTON_LEFT or not event.pressed:
+			return
+	elif event is InputEventScreenTouch:
+		if not event.pressed:
+			return
+	else:
+		return
+	_resolve_character_action(instance_id)
+
+func _on_heart_input(event: InputEvent, target_is_opponent: bool) -> void:
+	if not target_is_opponent:
+		return
+	if current_phase != BattlePhase.PLAYER_ACTIONS or selected_actor_id <= 0:
+		return
+
+	var is_offensive_action := pending_action == "attack"
+	if not is_offensive_action:
+		var technique: Dictionary = GameManager.techniques_catalog.get(
+			pending_action,
+			{}
+		)
+		is_offensive_action = int(technique.get("value", 0)) < 0
+	if not is_offensive_action:
+		return
+	if event is InputEventMouseButton:
+		if event.button_index != MOUSE_BUTTON_LEFT or not event.pressed:
+			return
+	elif event is InputEventScreenTouch:
+		if not event.pressed:
+			return
+	else:
+		return
+
+	var actor_position: Vector2i = _get_unit_position(selected_actor_id)
+	var heart_position := Vector2i(-1, CENTER_COLUMN)
+	if (
+		actor_position.x < 0
+		or _grid_distance(actor_position, heart_position)
+		> _get_action_range(pending_action)
+	):
+		turn_status_label.text = "Le cœur adverse est hors de portée"
+		return
+	if not _has_clear_attack_line(
+		actor_position,
+		heart_position,
+		selected_actor_id
+	):
+		turn_status_label.text = "La ligne de tir vers le cœur est bloquée"
+		return
+	opponent_heart_lives = maxi(0, opponent_heart_lives - 1)
+	_complete_player_action()
+
+func _resolve_character_action(target_id: int) -> void:
+	if selected_actor_id <= 0 or not unit_health.has(target_id):
+		return
+	var actor_position: Vector2i = _get_unit_position(selected_actor_id)
+	var target_position: Vector2i = _get_unit_position(target_id)
+	if actor_position.x < 0 or target_position.x < 0:
+		return
+	if _grid_distance(actor_position, target_position) > _get_action_range(pending_action):
+		turn_status_label.text = "La cible est hors de portée"
+		return
+
+	var actor := _get_player_figure(selected_actor_id)
+	var actor_stats: Dictionary = actor.get("data", {}).get("stats", {})
+	var is_offensive_action := pending_action == "attack"
+	if not is_offensive_action:
+		var selected_technique: Dictionary = GameManager.techniques_catalog.get(
+			pending_action,
+			{}
+		)
+		is_offensive_action = int(selected_technique.get("value", 0)) < 0
+	if (
+		is_offensive_action
+		and not _has_clear_attack_line(
+			actor_position,
+			target_position,
+			selected_actor_id
+		)
+	):
+		turn_status_label.text = "La ligne de tir est bloquée"
+		return
+
+	if pending_action == "attack":
+		if target_id > 0:
+			return
+		_apply_damage(target_id, int(actor_stats.get("attack", 0)))
+	else:
+		var technique: Dictionary = GameManager.techniques_catalog.get(
+			pending_action,
+			{}
+		)
+		var value := int(technique.get("value", 0))
+		if value < 0 and target_id < 0:
+			var hit := _apply_damage(
+				target_id,
+				abs(value),
+				"magic",
+				int(actor_stats.get("magic", 0))
+			)
+			if hit:
+				_try_apply_side_effect(target_id, technique)
+		elif value > 0 and target_id > 0:
+			_apply_healing(target_id, value)
+		else:
+			return
+	_complete_player_action()
+
+func _complete_player_action() -> void:
+	player_acted[selected_actor_id] = true
+	selected_actor_id = -1
+	pending_action = ""
+	if not _check_battle_over():
+		_update_combat_ui()
+
+func _grid_distance(first: Vector2i, second: Vector2i) -> int:
+	return absi(first.x - second.x) + absi(first.y - second.y)
+
+func _has_clear_attack_line(
+	origin: Vector2i,
+	target: Vector2i,
+	attacker_id: int
+) -> bool:
+	if origin == target:
+		return false
+	var row_distance: int = absi(target.x - origin.x)
+	var column_distance: int = absi(target.y - origin.y)
+	var is_axis_aligned := origin.x == target.x or origin.y == target.y
+	var is_diagonal := row_distance == column_distance
+	if not is_axis_aligned and not is_diagonal:
+		return false
+
+	var direction := Vector2i(
+		signi(target.x - origin.x),
+		signi(target.y - origin.y)
+	)
+	var current := origin + direction
+	while current != target:
+		if _is_position_occupied(current, attacker_id):
+			return false
+		current += direction
+	return true
+
+func _get_action_range(action_id: String) -> int:
+	if action_id == "attack":
+		return ATTACK_RANGE
+	var technique: Dictionary = GameManager.techniques_catalog.get(action_id, {})
+	return maxi(1, int(technique.get("range", ATTACK_RANGE)))
+
+func _get_unit_position(instance_id: int) -> Vector2i:
+	if instance_id > 0:
+		return player_figure_positions.get(instance_id, Vector2i(-1, -1))
+	return enemy_figure_positions.get(instance_id, Vector2i(-1, -1))
+
+func _get_unit_figure(instance_id: int) -> Dictionary:
+	if instance_id > 0:
+		return _get_player_figure(instance_id)
+	for figure in enemy_figures:
+		if int(figure.get("instance_id", 0)) == instance_id:
+			return figure
+	return {}
+
+func _apply_damage(
+	instance_id: int,
+	amount: int,
+	damage_type: String = "physical",
+	magic_bonus: int = 0,
+	can_dodge: bool = true
+) -> bool:
+	if amount <= 0 or not unit_health.has(instance_id):
+		return false
+	var target_figure := _get_unit_figure(instance_id)
+	var target_stats: Dictionary = target_figure.get("data", {}).get("stats", {})
+	var effective_defense := 0.0
+	if can_dodge:
+		var dodge_chance := clampf(
+			0.1 + float(target_stats.get("escape", 0)) * 0.05,
+			0.0,
+			1.0
+		)
+		if randf() < dodge_chance:
+			var character_name := str(
+				target_figure.get("data", {}).get("name", "La figurine")
+			)
+			_show_combat_message(character_name + " esquive l'attaque !")
+			return false
+
+	if damage_type == "magic":
+		amount += magic_bonus
+		effective_defense = float(target_stats.get("spirit", 0))
+	elif damage_type == "physical":
+		effective_defense = float(target_stats.get("defense", 0))
+	if defending_units.has(instance_id):
+		effective_defense *= 1.25
+		defending_units.erase(instance_id)
+	amount = maxi(1, int(ceil(float(amount) - effective_defense)))
+	unit_health[instance_id] = maxi(0, int(unit_health[instance_id]) - amount)
+	_update_unit_health_display(instance_id)
+	if int(unit_health[instance_id]) == 0:
+		if instance_id > 0:
+			player_figure_positions.erase(instance_id)
+			player_move_points_used.erase(instance_id)
+			player_acted.erase(instance_id)
+		else:
+			enemy_figure_positions.erase(instance_id)
+		var sprite: TextureRect = figure_visuals.get(instance_id)
+		if sprite != null:
+			sprite.queue_free()
+			figure_visuals.erase(instance_id)
+			enemy_figure_visuals.erase(sprite)
+		unit_health.erase(instance_id)
+		unit_max_health.erase(instance_id)
+		status_effects.erase(instance_id)
+	return true
+
+func _apply_healing(instance_id: int, amount: int) -> void:
+	if amount <= 0 or not unit_health.has(instance_id):
+		return
+	unit_health[instance_id] = mini(
+		int(unit_max_health[instance_id]),
+		int(unit_health[instance_id]) + amount
+	)
+	_update_unit_health_display(instance_id)
+	var effects: Array = status_effects.get(instance_id, [])
+	for index in range(effects.size() - 1, -1, -1):
+		var effect_id := str(effects[index].get("id", ""))
+		if effect_id in ["burn", "poison"]:
+			effects.remove_at(index)
+	if effects.is_empty():
+		status_effects.erase(instance_id)
+	else:
+		status_effects[instance_id] = effects
+
+func _try_apply_side_effect(instance_id: int, technique: Dictionary) -> void:
+	if not unit_health.has(instance_id):
+		return
+	var effect_id := str(technique.get("side_effect", ""))
+	var chance := clampf(float(technique.get("side_effect_chance", 0.0)), 0.0, 1.0)
+	if effect_id.is_empty() or randf() >= chance:
+		return
+
+	var effects: Array = status_effects.get(instance_id, [])
+	var remaining_turns := int(technique.get("side_effect_duration", -1))
+	var power := int(technique.get("side_effect_power", 0))
+	for effect in effects:
+		if str(effect.get("id", "")) != effect_id:
+			continue
+		if int(effect.get("remaining_turns", -1)) >= 0:
+			if remaining_turns < 0:
+				effect["remaining_turns"] = -1
+			else:
+				effect["remaining_turns"] = maxi(
+					int(effect["remaining_turns"]),
+					remaining_turns
+				)
+		effect["power"] = maxi(int(effect.get("power", 0)), power)
+		status_effects[instance_id] = effects
+		return
+
+	effects.append({
+		"id": effect_id,
+		"remaining_turns": remaining_turns,
+		"power": power
+	})
+	status_effects[instance_id] = effects
+
+func _has_status_effect(instance_id: int, effect_id: String) -> bool:
+	for effect in status_effects.get(instance_id, []):
+		if str(effect.get("id", "")) == effect_id:
+			return true
+	return false
+
+func _tick_side_effects(player_side: bool) -> void:
+	for instance_key in status_effects.keys():
+		var instance_id := int(instance_key)
+		if (instance_id > 0) != player_side:
+			continue
+		var effects: Array = status_effects[instance_key]
+		var remaining_effects: Array = []
+		for effect in effects:
+			var effect_id := str(effect.get("id", ""))
+			if effect_id in ["burn", "poison"]:
+				_apply_damage(
+					instance_id,
+					int(effect.get("power", 1)),
+					"effect",
+					0,
+					false
+				)
+				if not unit_health.has(instance_id):
+					continue
+			var turns_left := int(effect.get("remaining_turns", -1))
+			if turns_left > 0:
+				turns_left -= 1
+				effect["remaining_turns"] = turns_left
+			if turns_left != 0:
+				remaining_effects.append(effect)
+		if remaining_effects.is_empty():
+			status_effects.erase(instance_key)
+		else:
+			status_effects[instance_key] = remaining_effects
+
+func _update_unit_health_display(instance_id: int) -> void:
+	if not figure_visuals.has(instance_id):
+		return
+	var sprite: TextureRect = figure_visuals[instance_id]
+	var health_bar := sprite.get_node_or_null("HealthBar") as ProgressBar
+	if health_bar != null and unit_health.has(instance_id):
+		health_bar.value = unit_health[instance_id]
+
+func _format_hearts(lives: int) -> String:
+	return "♥ ".repeat(lives).strip_edges()
+
+func _show_combat_message(message: String) -> void:
+	combat_message_label.text = message
+	combat_message_label.visible = true
+	combat_message_timer.start()
+
+func _on_combat_message_timeout() -> void:
+	combat_message_label.visible = false
+
+func _check_battle_over() -> bool:
+	if opponent_heart_lives <= 0 or enemy_figure_positions.is_empty():
+		current_phase = BattlePhase.FINISHED
+		turn_status_label.text = "Victoire !"
+		_update_combat_ui()
+		return true
+	if player_heart_lives <= 0 or player_figure_positions.is_empty():
+		current_phase = BattlePhase.FINISHED
+		turn_status_label.text = "Défaite..."
+		_update_combat_ui()
+		return true
+	return false
+
+func _run_enemy_turn() -> void:
+	if current_phase != BattlePhase.ENEMY_TURN:
+		return
+
+	for figure in enemy_figures:
+		var instance_id := int(figure.get("instance_id", -1))
+		if not enemy_figure_positions.has(instance_id):
+			continue
+
+		await get_tree().create_timer(0.25).timeout
+		if not is_inside_tree() or current_phase != BattlePhase.ENEMY_TURN:
+			return
+		await _run_enemy_figure_turn(instance_id)
+		if _check_battle_over():
+			return
+
+	_tick_side_effects(false)
+	if _check_battle_over():
+		return
+	_start_player_turn()
+
+func _get_path_distance_map(
+	goal: Vector2i,
+	ignored_instance_id: int
+) -> Dictionary:
+	var distances: Dictionary = {goal: 0}
+	var pending: Array[Vector2i] = [goal]
+	var directions: Array[Vector2i] = [
+		Vector2i(0, -1),
+		Vector2i(0, 1),
+		Vector2i(-1, 0),
+		Vector2i(1, 0)
+	]
+
+	while not pending.is_empty():
+		var current: Vector2i = pending.pop_front()
+		for direction in directions:
+			var next_cell: Vector2i = current + direction
+			if (
+				next_cell.x < 0 or next_cell.x >= BOARD_SIZE
+				or next_cell.y < 0 or next_cell.y >= BOARD_SIZE
+				or distances.has(next_cell)
+				or _is_position_occupied(
+					next_cell,
+					ignored_instance_id,
+					_can_pass_obstacles(ignored_instance_id)
+				)
+			):
+				continue
+
+			distances[next_cell] = int(distances[current]) + 1
+			pending.append(next_cell)
+
+	return distances
+
+func _get_shortest_path(
+	start: Vector2i,
+	goal: Vector2i,
+	ignored_instance_id: int
+) -> Array[Vector2i]:
+	var path: Array[Vector2i] = []
+	if start == goal:
+		return path
+
+	var pending: Array[Vector2i] = [start]
+	var previous_cell: Dictionary = {}
+	var visited: Dictionary = {start: true}
+	var directions: Array[Vector2i] = [
+		Vector2i(0, -1),
+		Vector2i(0, 1),
+		Vector2i(-1, 0),
+		Vector2i(1, 0)
+	]
+
+	while not pending.is_empty() and not visited.has(goal):
+		var current: Vector2i = pending.pop_front()
+		for direction in directions:
+			var next_cell: Vector2i = current + direction
+			if (
+				next_cell.x < 0 or next_cell.x >= BOARD_SIZE
+				or next_cell.y < 0 or next_cell.y >= BOARD_SIZE
+				or visited.has(next_cell)
+				or _is_position_occupied(
+					next_cell,
+					ignored_instance_id,
+					_can_pass_obstacles(ignored_instance_id)
+				)
+			):
+				continue
+
+			visited[next_cell] = true
+			previous_cell[next_cell] = current
+			pending.append(next_cell)
+
+	if not visited.has(goal):
+		return path
+
+	var current := goal
+	while current != start:
+		path.push_front(current)
+		current = previous_cell[current]
+	return path
+
+func _run_enemy_figure_turn(instance_id: int) -> void:
+	var target: Dictionary = _get_enemy_target(instance_id)
+	if target.is_empty():
+		defending_units[instance_id] = true
+		return
+
+	var actor_position: Vector2i = _get_unit_position(instance_id)
+	var target_position: Vector2i = target["position"]
+	var figure := _get_unit_figure(instance_id)
+	var movement_target := target_position
+	if bool(target["is_heart"]):
+		movement_target = Vector2i(BOARD_SIZE - 1, CENTER_COLUMN)
+	var path_distances := _get_path_distance_map(movement_target, instance_id)
+	var best_position := actor_position
+	var best_distance := int(path_distances.get(actor_position, NO_PATH_DISTANCE))
+
+	for position in _get_reachable_cells(
+		actor_position,
+		_get_move_points(figure),
+		instance_id
+	):
+		var distance := int(path_distances.get(position, NO_PATH_DISTANCE))
+		if distance < best_distance:
+			best_distance = distance
+			best_position = position
+
+	if best_position != actor_position:
+		var movement_path := _get_shortest_path(
+			actor_position,
+			best_position,
+			instance_id
+		)
+		if not movement_path.is_empty():
+			await _animate_enemy_figure_move(instance_id, movement_path)
+			actor_position = best_position
+
+	var action: Dictionary = _choose_enemy_attack(figure, target)
+	var performed_action := not action.is_empty()
+	if performed_action:
+		if bool(target["is_heart"]):
+			player_heart_lives = maxi(0, player_heart_lives - 1)
+			enemy_heart_attack_count += 1
+		else:
+			var target_id := int(target["instance_id"])
+			if action["type"] == "magic":
+				var hit := _apply_damage(
+					target_id,
+					int(action["damage"]),
+					"magic",
+					int(action["magic_bonus"])
+				)
+				if hit:
+					_try_apply_side_effect(target_id, action["technique"])
+			else:
+				_apply_damage(target_id, int(action["damage"]))
+			enemy_figure_attack_count += 1
+	if not performed_action:
+		defending_units[instance_id] = true
+	_update_combat_ui()
+
+func _choose_enemy_attack(figure: Dictionary, target: Dictionary) -> Dictionary:
+	var figure_data: Dictionary = figure.get("data", {})
+	var stats: Dictionary = figure_data.get("stats", {})
+	var figure_class := str(figure_data.get("class", "creature"))
+	var target_is_heart := bool(target["is_heart"])
+	var target_id := int(target.get("instance_id", 0))
+	var target_stats: Dictionary = {}
+	if not target_is_heart:
+		target_stats = _get_unit_figure(target_id).get("data", {}).get("stats", {})
+	var distance := _grid_distance(
+		_get_unit_position(int(figure.get("instance_id", -1))),
+		target["position"]
+	)
+	var has_clear_line := _has_clear_attack_line(
+		_get_unit_position(int(figure.get("instance_id", -1))),
+		target["position"],
+		int(figure.get("instance_id", -1))
+	)
+
+	var physical_attack: Dictionary = {}
+	if distance <= ATTACK_RANGE and has_clear_line:
+		var defense_key := "spirit" if target_is_heart else "defense"
+		physical_attack = {
+			"type": "physical",
+			"damage": int(stats.get("attack", 0)),
+			"score": maxi(
+				1,
+				int(stats.get("attack", 0))
+				- int(target_stats.get(defense_key, 0))
+			)
+		}
+
+	var best_magic_attack: Dictionary = {}
+	var target_spirit := 0 if target_is_heart else int(target_stats.get("spirit", 0))
+	for technique_id in stats.get("techniques", []):
+		var technique: Dictionary = GameManager.techniques_catalog.get(
+			str(technique_id),
+			{}
+		)
+		var value := int(technique.get("value", 0))
+		if technique.get("type", "") != "action" or value >= 0:
+			continue
+		if (
+			distance > _get_action_range(str(technique_id))
+			or not has_clear_line
+		):
+			continue
+
+		var damage: int = absi(value)
+		var magic_score := maxi(
+			1,
+			damage + int(stats.get("magic", 0)) - target_spirit
+		)
+		if best_magic_attack.is_empty() or magic_score > int(best_magic_attack["score"]):
+			best_magic_attack = {
+				"type": "magic",
+				"damage": damage,
+				"magic_bonus": int(stats.get("magic", 0)),
+				"score": magic_score,
+				"technique": technique
+			}
+
+	match figure_class:
+		"magician":
+			if not best_magic_attack.is_empty():
+				return best_magic_attack
+			return physical_attack
+		"warrior":
+			if not physical_attack.is_empty():
+				return physical_attack
+			return best_magic_attack
+		_:
+			if (
+				not best_magic_attack.is_empty()
+				and (
+					physical_attack.is_empty()
+					or int(best_magic_attack["score"]) > int(physical_attack["score"])
+				)
+			):
+				return best_magic_attack
+			return physical_attack
+
+func _get_enemy_target(enemy_instance_id: int) -> Dictionary:
+	var heart_target := {
+		"instance_id": 0,
+		"position": Vector2i(BOARD_SIZE, CENTER_COLUMN),
+		"is_heart": true
+	}
+	var nearest_player_id := _find_nearest_player(enemy_instance_id)
+
+	if enemy_strategy == "heart_only":
+		var blocker_id := _find_adjacent_heart_blocker(enemy_instance_id)
+		if blocker_id > 0:
+			return {
+				"instance_id": blocker_id,
+				"position": _get_unit_position(blocker_id),
+				"is_heart": false
+			}
+		return heart_target
+	if nearest_player_id < 0:
+		return heart_target if enemy_strategy == "balanced" else {}
+	if enemy_strategy == "figures_only":
+		return {
+			"instance_id": nearest_player_id,
+			"position": _get_unit_position(nearest_player_id),
+			"is_heart": false
+		}
+
+	var enemy_position: Vector2i = _get_unit_position(enemy_instance_id)
+	var nearest_player_position: Vector2i = _get_unit_position(nearest_player_id)
+	var heart_distance := _grid_distance(
+		enemy_position,
+		heart_target["position"]
+	)
+	var figure_distance := _grid_distance(enemy_position, nearest_player_position)
+	var should_attack_heart := false
+
+	if enemy_heart_attack_count < enemy_figure_attack_count:
+		should_attack_heart = true
+	elif enemy_heart_attack_count == enemy_figure_attack_count:
+		should_attack_heart = heart_distance <= figure_distance
+
+	if should_attack_heart:
+		return heart_target
+	return {
+		"instance_id": nearest_player_id,
+		"position": nearest_player_position,
+		"is_heart": false
+	}
+
+func _find_adjacent_heart_blocker(enemy_instance_id: int) -> int:
+	var enemy_position: Vector2i = _get_unit_position(enemy_instance_id)
+	var heart_approach_position := Vector2i(BOARD_SIZE - 1, CENTER_COLUMN)
+	var direct_path_distance := _grid_distance(
+		enemy_position,
+		heart_approach_position
+	)
+
+	for player_id in player_figure_positions:
+		var player_position: Vector2i = player_figure_positions[player_id]
+		if _grid_distance(enemy_position, player_position) != ATTACK_RANGE:
+			continue
+		if (
+			_grid_distance(enemy_position, player_position)
+			+ _grid_distance(player_position, heart_approach_position)
+			== direct_path_distance
+		):
+			return int(player_id)
+	return -1
+
+func _find_nearest_player(enemy_id: int) -> int:
+	var nearest_id := -1
+	var nearest_distance := BOARD_SIZE * BOARD_SIZE + 1
+	var enemy_position: Vector2i = _get_unit_position(enemy_id)
+
+	for player_id in player_figure_positions:
+		var distance := _grid_distance(
+			enemy_position,
+			player_figure_positions[player_id]
+		)
+		if distance < nearest_distance:
+			nearest_distance = distance
+			nearest_id = int(player_id)
+	return nearest_id
+
+func _animate_enemy_figure_move(
+	instance_id: int,
+	path: Array[Vector2i]
+) -> void:
+	if path.is_empty() or not figure_visuals.has(instance_id):
+		return
+
+	var sprite: TextureRect = figure_visuals[instance_id]
+	var cell_size: float = board_grid.get_child(0).size.x
+	var tween := create_tween()
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.set_ease(Tween.EASE_IN_OUT)
+
+	for destination in path:
+		var cell_center := _get_cell_center(destination.x, destination.y)
+		var target_position := Vector2(
+			cell_center.x - sprite.size.x / 2.0,
+			cell_center.y + cell_size / 2.0 - sprite.size.y
+		)
+		sprite.z_index = destination.x
+		tween.tween_property(
+			sprite,
+			"position",
+			target_position,
+			ENEMY_STEP_DURATION
+		)
+
+	await tween.finished
+	var final_position: Vector2i = path[path.size() - 1]
+	enemy_figure_positions[instance_id] = final_position
+	_update_unit_health_display(instance_id)
+
+func _start_player_turn() -> void:
+	if _check_battle_over():
+		return
+	current_phase = BattlePhase.PLAYER_MOVEMENT
+	player_move_points_used.clear()
+	player_acted.clear()
+	selected_actor_id = -1
+	pending_action = ""
+	_update_combat_ui()

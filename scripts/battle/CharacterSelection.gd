@@ -1,6 +1,6 @@
 extends Control
 
-signal team_confirmed(enemy_id: String, selected_instance_ids: Array)
+signal team_confirmed(enemy_data: Dictionary, selected_instance_ids: Array)
 
 const CHARACTER_IMAGE_PATH := "res://assets/characters/"
 
@@ -17,7 +17,7 @@ const SORT_OPTIONS := [
 
 const MAX_SELECTION := 3
 
-var enemy_id: String = ""
+var enemy_data: Dictionary = {}
 var collection_data: Array[Dictionary] = []
 var selected_instances: Array[int] = []
 
@@ -38,8 +38,8 @@ func _ready() -> void:
 	_load_collection()
 
 
-func configure(opponent_id: String) -> void:
-	enemy_id = opponent_id
+func configure(opponent: Dictionary) -> void:
+	enemy_data = opponent.duplicate(true)
 
 
 # --------------------------------------------------
@@ -387,6 +387,6 @@ func _on_start_pressed() -> void:
 		return
 
 	team_confirmed.emit(
-		enemy_id,
+		enemy_data.duplicate(true),
 		selected_instances.duplicate()
 	)

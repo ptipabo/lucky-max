@@ -8,15 +8,17 @@
 	  "image": "cat_mage.png",
 	  "sell_value": 2,
 	  "stats": {
-		"lifepoints": 27,
-		"magic": 20,
-		"attack": 6,
-		"defense": 4,
+		"lifepoints": 19,
+		"magic": 9,
+		"spirit": 8,
+		"attack": 5,
+		"defense": 2,
 		"escape": 2,
-		"chance": 1,
+		"chance": 3,
 		"moves": 2,
 		"techniques": ["fire","heal","extra_move"]
-	  }
+	  },
+	  "class": "magician"
 	},
 	{"id": "frog_king",
 	  "name": "Roi Croâ",
@@ -25,15 +27,17 @@
 	  "image": "frog_king.png",
 	  "sell_value": 2,
 	  "stats": {
-		"lifepoints": 27,
-		"magic": 20,
-		"attack": 6,
+		"lifepoints": 24,
+		"magic": 6,
+		"spirit": 5,
+		"attack": 7,
 		"defense": 4,
 		"escape": 2,
 		"chance": 1,
 		"moves": 3,
-		"techniques": ["fire","heal","extra_move"]
-	  }
+		"techniques": ["extra_move","fire"]
+	  },
+	  "class": "knight"
 	},
 	{"id": "panda_ninja",
 	  "name": "Panda Ninja",
@@ -42,15 +46,17 @@
 	  "image": "panda_ninja.png",
 	  "sell_value": 2,
 	  "stats": {
-		"lifepoints": 27,
-		"magic": 20,
-		"attack": 6,
-		"defense": 4,
+		"lifepoints": 28,
+		"magic": 3,
+		"spirit": 4,
+		"attack": 8,
+		"defense": 3,
 		"escape": 2,
 		"chance": 1,
 		"moves": 3,
-		"techniques": ["fire","heal","extra_move"]
-	  }
+		"techniques": ["extra_move"]
+	  },
+	  "class": "warrior"
 	},
 	{"id": "axolotl_star",
 	  "name": "Axolotl Stellaire",
@@ -61,13 +67,15 @@
 	  "stats": {
 		"lifepoints": 27,
 		"magic": 20,
+		"spirit": 4,
 		"attack": 6,
 		"defense": 4,
 		"escape": 2,
 		"chance": 1,
 		"moves": 2,
 		"techniques": ["fire","heal","extra_move"]
-	  }
+	  },
+	  "class": "creature"
 	},
 	{"id": "dragon_candy",
 	  "name": "Dragounet Bonbon",
@@ -78,13 +86,15 @@
 	  "stats": {
 		"lifepoints": 27,
 		"magic": 20,
+		"spirit": 4,
 		"attack": 6,
 		"defense": 4,
 		"escape": 2,
 		"chance": 1,
 		"moves": 1,
 		"techniques": ["fire","heal","extra_move"]
-	  }
+	  },
+	  "class": "creature"
 	},
 	{"id": "funny_ghost",
 	  "name": "Fantôme rigolo",
@@ -95,13 +105,15 @@
 	  "stats": {
 		"lifepoints": 27,
 		"magic": 20,
+		"spirit": 4,
 		"attack": 6,
 		"defense": 4,
 		"escape": 2,
 		"chance": 1,
 		"moves": 2,
-		"techniques": ["fire","heal","extra_move"]
-	  }
+		"techniques": ["ignore_walls","heal"]
+	  },
+	  "class": "creature"
 	},
 	{"id": "unicorn_cloud",
 	  "name": "Licorne Nuage",
@@ -112,13 +124,15 @@
 	  "stats": {
 		"lifepoints": 27,
 		"magic": 20,
+		"spirit": 4,
 		"attack": 6,
 		"defense": 4,
 		"escape": 2,
 		"chance": 1,
 		"moves": 2,
 		"techniques": ["fire","heal","extra_move"]
-	  }
+	  },
+	  "class": "creature"
 	},
 	{"id": "phoenix_solar",
 	  "name": "Phénix Solaire",
@@ -129,13 +143,15 @@
 	  "stats": {
 		"lifepoints": 27,
 		"magic": 20,
+		"spirit": 4,
 		"attack": 6,
 		"defense": 4,
 		"escape": 2,
 		"chance": 1,
 		"moves": 2,
 		"techniques": ["fire","heal","extra_move"]
-	  }
+	  },
+	  "class": "creature"
 	},
 	{"id": "ninja_haku",
 	  "name": "Ninja Haku",
@@ -146,13 +162,15 @@
 	  "stats": {
 		"lifepoints": 27,
 		"magic": 20,
+		"spirit": 4,
 		"attack": 6,
 		"defense": 4,
 		"escape": 2,
 		"chance": 1,
 		"moves": 2,
 		"techniques": ["fire","heal","extra_move"]
-	  }
+	  },
+	  "class": "warrior"
 	},
 	{"id": "fatty_killer",
 	  "name": "Assassin rondouillard",
@@ -163,13 +181,15 @@
 	  "stats": {
 		"lifepoints": 27,
 		"magic": 20,
+		"spirit": 4,
 		"attack": 6,
 		"defense": 4,
 		"escape": 2,
 		"chance": 1,
 		"moves": 2,
 		"techniques": ["fire","heal","extra_move"]
-	  }
+	  },
+	  "class": "warrior"
 	},
 	{"id": "cosmic_leviathan",
 	  "name": "Léviathan Cosmique",
@@ -180,13 +200,15 @@
 	  "stats": {
 		"lifepoints": 27,
 		"magic": 20,
+		"spirit": 4,
 		"attack": 6,
 		"defense": 4,
 		"escape": 2,
 		"chance": 1,
 		"moves": 2,
 		"techniques": ["fire","heal","extra_move"]
-	  }
+	  },
+	  "class": "magician"
 	},
 	{"id": "diamond_slime",
 	  "name": "Slime Diamant",
@@ -197,13 +219,15 @@
 	  "stats": {
 		"lifepoints": 27,
 		"magic": 20,
+		"spirit": 4,
 		"attack": 6,
 		"defense": 4,
 		"escape": 2,
 		"chance": 1,
 		"moves": 1,
 		"techniques": ["fire","heal","extra_move"]
-	  }
+	  },
+	  "class": "creature"
 	},
 	{"id": "skinny_killer",
 	  "name": "Assassin maigrichon",
@@ -214,13 +238,15 @@
 	  "stats": {
 		"lifepoints": 27,
 		"magic": 20,
+		"spirit": 4,
 		"attack": 6,
 		"defense": 4,
 		"escape": 2,
 		"chance": 1,
 		"moves": 2,
 		"techniques": ["fire","heal","extra_move"]
-	  }
+	  },
+	  "class": "knight"
 	},
 	{"id": "quetzalcoatl",
 	  "name": "Quetzalcoatl",
@@ -229,15 +255,17 @@
 	  "image": "quetzalcoatl.png",
 	  "sell_value": 40,
 	  "stats": {
-		"lifepoints": 27,
+		"lifepoints": 45,
 		"magic": 20,
+		"spirit": 4,
 		"attack": 6,
 		"defense": 4,
 		"escape": 2,
 		"chance": 1,
 		"moves": 3,
 		"techniques": ["fire","heal","extra_move"]
-	  }
+	  },
+	  "class": "knight"
 	},
 	{"id": "kuntur",
 	  "name": "Kuntur",
@@ -246,15 +274,17 @@
 	  "image": "kuntur.png",
 	  "sell_value": 40,
 	  "stats": {
-		"lifepoints": 27,
+		"lifepoints": 42,
 		"magic": 20,
+		"spirit": 4,
 		"attack": 6,
 		"defense": 4,
 		"escape": 2,
 		"chance": 1,
 		"moves": 4,
 		"techniques": ["fire","heal","extra_move"]
-	  }
+	  },
+	  "class": "magician"
 	},
 	{"id": "balham",
 	  "name": "Balham",
@@ -263,15 +293,17 @@
 	  "image": "balham.png",
 	  "sell_value": 40,
 	  "stats": {
-		"lifepoints": 27,
+		"lifepoints": 47,
 		"magic": 20,
-		"attack": 6,
+		"spirit": 4,
+		"attack": 9,
 		"defense": 4,
 		"escape": 2,
 		"chance": 1,
 		"moves": 3,
 		"techniques": ["fire","heal","extra_move"]
-	  }
+	  },
+	  "class": "warrior"
 	}
   ]
 }
