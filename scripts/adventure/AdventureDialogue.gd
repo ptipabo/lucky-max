@@ -80,6 +80,7 @@ func _build_interface() -> void:
 	back_button.custom_minimum_size = Vector2(0, 45)
 	back_button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	back_button.pressed.connect(_on_back_pressed)
+	GameManager.apply_button_skin(back_button)
 	layout.add_child(back_button)
 
 	# Présentation du personnage.
@@ -162,6 +163,7 @@ func _build_interface() -> void:
 	next_button.text = "Continuer"
 	next_button.custom_minimum_size = Vector2(0, 48)
 	next_button.pressed.connect(_on_next_pressed)
+	GameManager.apply_button_skin(next_button)
 	dialogue_layout.add_child(next_button)
 
 	# Préparation des données.

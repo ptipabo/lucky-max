@@ -14,6 +14,13 @@ const SAVE_VERSION := 1
 const MAX_CURRENCY: int = 999999
 const CHARACTERS_CATALOG_PATH := "res://data/characters.json"
 const TECHNIQUES_CATALOG_PATH := "res://data/techniques.json"
+const BUTTON_TEXTURES: Array[Texture2D] = [
+	preload("res://assets/backgrounds/button_extra_short.png"),
+	preload("res://assets/backgrounds/button_short.png"),
+	preload("res://assets/backgrounds/button_medium.png"),
+	preload("res://assets/backgrounds/button_large.png")
+]
+const BUTTON_TEXTURE_WIDTHS: Array[int] = [144, 279, 541, 783]
 const RECHARGE_THRESHOLD: int = 10
 const RECHARGE_AMOUNT: int = 10
 const RECHARGE_DELAY_SECONDS: int = 15#300
@@ -48,6 +55,75 @@ func _ready() -> void:
 	recharge_timer.timeout.connect(_check_recharge)
 	add_child(recharge_timer)
 	recharge_timer.start()
+
+func apply_button_skin(button: Button) -> void:
+	if not button.has_meta("skin_resize_connected"):
+		button.set_meta("skin_resize_connected", true)
+		button.resized.connect(_update_button_skin.bind(button))
+	_update_button_skin(button)
+
+func _update_button_skin(button: Button) -> void:
+	if not is_instance_valid(button):
+		return
+
+	var font: Font = button.get_theme_font("font")
+	var font_size: int = button.get_theme_font_size("font_size")
+	var text_width := 0.0
+	if font != null:
+		for line in button.text.split("\n"):
+			text_width = maxf(
+				text_width,
+				font.get_string_size(
+					line,
+					HORIZONTAL_ALIGNMENT_LEFT,
+					-1,
+					font_size
+				).x
+			)
+
+	var requested_width: float = maxf(
+		button.custom_minimum_size.x,
+		text_width + 64.0
+	)
+	requested_width = maxf(requested_width, button.size.x)
+	var texture_index := BUTTON_TEXTURE_WIDTHS.size() - 1
+	for index in range(BUTTON_TEXTURE_WIDTHS.size()):
+		if requested_width <= BUTTON_TEXTURE_WIDTHS[index]:
+			texture_index = index
+			break
+
+	if int(button.get_meta("skin_texture_index", -1)) == texture_index:
+		return
+	button.set_meta("skin_texture_index", texture_index)
+
+	var normal := _make_button_stylebox(BUTTON_TEXTURES[texture_index])
+	button.add_theme_stylebox_override("normal", normal)
+
+	var hover := _make_button_stylebox(BUTTON_TEXTURES[texture_index])
+	hover.modulate_color = Color(1.12, 1.12, 1.12, 1.0)
+	button.add_theme_stylebox_override("hover", hover)
+
+	var pressed := _make_button_stylebox(BUTTON_TEXTURES[texture_index])
+	pressed.modulate_color = Color(0.78, 0.72, 0.62, 1.0)
+	button.add_theme_stylebox_override("pressed", pressed)
+
+	var disabled := _make_button_stylebox(BUTTON_TEXTURES[texture_index])
+	disabled.modulate_color = Color(0.58, 0.58, 0.58, 0.8)
+	button.add_theme_stylebox_override("disabled", disabled)
+	button.add_theme_stylebox_override("focus", hover)
+
+func _make_button_stylebox(texture: Texture2D) -> StyleBoxTexture:
+	var style := StyleBoxTexture.new()
+	style.texture = texture
+	style.texture_margin_left = 28
+	style.texture_margin_right = 28
+	style.texture_margin_top = 18
+	style.texture_margin_bottom = 18
+	style.content_margin_left = 30
+	style.content_margin_right = 30
+	style.content_margin_top = 14
+	style.content_margin_bottom = 14
+	return style
 
 # --------------------------------------------------
 # POINTS

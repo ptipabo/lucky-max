@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c1fb2ymnl18gp"
-path="res://.godot/imported/kronika_logo.png-21cc8741e32b899927398d45bff58d75.ctex"
+uid="uid://v4v06uq3tyua"
+path="res://.godot/imported/button_large.png-8ffa526c65bc2137c7d114288752b23a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/icons/kronika_logo.png"
-dest_files=["res://.godot/imported/kronika_logo.png-21cc8741e32b899927398d45bff58d75.ctex"]
+source_file="res://assets/backgrounds/button_large.png"
+dest_files=["res://.godot/imported/button_large.png-8ffa526c65bc2137c7d114288752b23a.ctex"]
 
 [params]
 

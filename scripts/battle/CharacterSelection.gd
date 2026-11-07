@@ -3,6 +3,7 @@ extends Control
 signal team_confirmed(enemy_data: Dictionary, selected_instance_ids: Array)
 
 const CHARACTER_IMAGE_PATH := "res://assets/characters/"
+const CHARACTER_PREVIEW_PATH := "res://assets/characters/previews/"
 
 const SORT_OPTIONS := [
 	{"label": "Rareté", "key": "rarity"},
@@ -82,11 +83,13 @@ func _build_interface() -> void:
 	sort_option.selected = 0
 	sort_option.item_selected.connect(_on_sort_changed)
 	sort_container.add_child(sort_option)
+	GameManager.apply_button_skin(sort_option)
 
 	direction_button = Button.new()
 	direction_button.text = "Décroissant ↓"
 	direction_button.pressed.connect(_on_direction_pressed)
 	sort_container.add_child(direction_button)
+	GameManager.apply_button_skin(direction_button)
 
 	# Barre de sélection.
 	selection_label = Label.new()
@@ -119,6 +122,7 @@ func _build_interface() -> void:
 	start_button.visible = false
 	start_button.pressed.connect(_on_start_pressed)
 	main_layout.add_child(start_button)
+	GameManager.apply_button_skin(start_button)
 
 	# Fenêtre de détails.
 	details_dialog = AcceptDialog.new()
@@ -126,6 +130,7 @@ func _build_interface() -> void:
 	details_dialog.ok_button_text = "Fermer"
 	details_dialog.get_label().autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	details_dialog.get_label().custom_minimum_size.x = 280
+	GameManager.apply_button_skin(details_dialog.get_ok_button())
 	add_child(details_dialog)
 
 
@@ -215,6 +220,7 @@ func _on_direction_pressed() -> void:
 	else:
 		direction_button.text = "Décroissant ↓"
 
+	GameManager.apply_button_skin(direction_button)
 	_refresh_grid()
 
 
@@ -231,6 +237,12 @@ func _create_character_card(entry: Dictionary) -> void:
 
 	var stats: Dictionary = character.get("stats", {})
 	var sort_key: String = SORT_OPTIONS[current_sort_index]["key"]
+	var is_selected := selected_instances.has(instance_id)
+
+	var card_item := VBoxContainer.new()
+	card_item.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card_item.add_theme_constant_override("separation", 4)
+	grid.add_child(card_item)
 
 	var card := Button.new()
 	card.custom_minimum_size = Vector2(0, 145)
@@ -243,14 +255,8 @@ func _create_character_card(entry: Dictionary) -> void:
 	card_style.bg_color = Color("#29483B")
 	card_style.set_corner_radius_all(8)
 	card_style.set_border_width_all(3)
-	card_style.border_color = _get_rarity_color(int(character.get("rarity", 0)))
-
-	if selected_instances.has(instance_id):
+	if is_selected:
 		card_style.border_color = Color("#FFD65A")
-		card_style.shadow_color = Color(1.0, 0.75, 0.15, 0.8)
-		card_style.shadow_size = 8
-	else:
-		card_style.border_color = Color("#806D4A")
 
 	card.add_theme_stylebox_override("normal", card_style)
 	var hover_style: StyleBoxFlat = card_style.duplicate()
@@ -259,7 +265,8 @@ func _create_character_card(entry: Dictionary) -> void:
 	var pressed_style: StyleBoxFlat = card_style.duplicate()
 	pressed_style.bg_color = Color("#1F3B2F")
 	card.add_theme_stylebox_override("pressed", pressed_style)
-	grid.add_child(card)
+	GameManager.apply_button_skin(card)
+	card_item.add_child(card)
 
 	var card_margin := MarginContainer.new()
 	card_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -277,6 +284,25 @@ func _create_character_card(entry: Dictionary) -> void:
 	layout.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card_margin.add_child(layout)
 
+	var selection_frame := Panel.new()
+	selection_frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	selection_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	selection_frame.z_index = 10
+	var frame_style := StyleBoxFlat.new()
+	frame_style.bg_color = Color(0, 0, 0, 0)
+	frame_style.set_corner_radius_all(8)
+	frame_style.set_border_width_all(3)
+	frame_style.border_color = (
+		Color("#FFD65A")
+		if is_selected
+		else _get_rarity_color(int(character.get("rarity", 0)))
+	)
+	if is_selected:
+		frame_style.shadow_color = Color(1.0, 0.75, 0.15, 0.85)
+		frame_style.shadow_size = 9
+	selection_frame.add_theme_stylebox_override("panel", frame_style)
+	card.add_child(selection_frame)
+
 	# Illustration.
 	var image_container := CenterContainer.new()
 	image_container.custom_minimum_size = Vector2(0, 76)
@@ -292,9 +318,7 @@ func _create_character_card(entry: Dictionary) -> void:
 	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	var image_path: String = CHARACTER_IMAGE_PATH + str(
-		character.get("image", "")
-	)
+	var image_path := _get_character_preview_path(character)
 
 	if ResourceLoader.exists(image_path):
 		image.texture = load(image_path) as Texture2D
@@ -328,19 +352,31 @@ func _create_character_card(entry: Dictionary) -> void:
 	attribute_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.add_child(attribute_label)
 
-	# Boutons.
-	var buttons := HBoxContainer.new()
-	buttons.alignment = BoxContainer.ALIGNMENT_END
-	buttons.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	layout.add_child(buttons)
+	# Bouton d'informations sous la carte.
+	var info_container := CenterContainer.new()
+	info_container.custom_minimum_size = Vector2(0, 32)
+	info_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card_item.add_child(info_container)
 
 	var info_button := Button.new()
 	info_button.text = "ⓘ"
-	info_button.custom_minimum_size = Vector2(28, 0)
+	info_button.custom_minimum_size = Vector2(32, 30)
 	info_button.pressed.connect(
 		_show_character_details.bind(entry)
 	)
-	buttons.add_child(info_button)
+	GameManager.apply_button_skin(info_button)
+	info_container.add_child(info_button)
+
+func _get_character_preview_path(character: Dictionary) -> String:
+	var image_name := str(character.get("image", ""))
+	var image_stem := image_name.get_basename()
+	var preview_name := image_stem + "_preview.png"
+
+	var preview_path := CHARACTER_PREVIEW_PATH + preview_name
+	if ResourceLoader.exists(preview_path):
+		return preview_path
+	return CHARACTER_IMAGE_PATH + image_name
 
 func _get_rarity_color(rarity: int) -> Color:
 	match rarity:

@@ -255,6 +255,7 @@ func _build_replay_overlay() -> void:
 	replay_button.custom_minimum_size = Vector2(0, 52)
 	replay_button.add_theme_font_size_override("font_size", 21)
 	replay_button.pressed.connect(_on_replay_pressed)
+	GameManager.apply_button_skin(replay_button)
 	replay_container.add_child(replay_button)
 
 func _on_replay_pressed() -> void:

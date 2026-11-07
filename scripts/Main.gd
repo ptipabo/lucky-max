@@ -20,6 +20,7 @@ const RARITY_COLOR_LEGENDARY := Color("#ffef80")
 const RARITY_COLOR_DIVINE := Color("4a27b5ff")
 const DOORS_ENTRY_COST: int = 10
 const CHARACTERS_IMAGE_PATH := "res://assets/characters/"
+const CHARACTER_PREVIEW_PATH := "res://assets/characters/previews/"
 const BACKGROUNDS_FOLDER := "res://assets/backgrounds/"
 const GAMES_TAB_NAME := "Epreuves"
 const ADVENTURE_TAB_NAME := "Aventure"
@@ -90,6 +91,7 @@ func _build_interface() -> void:
 	currency_limit_dialog = AcceptDialog.new()
 	currency_limit_dialog.title = "Maximum atteint"
 	currency_limit_dialog.ok_button_text = "Fermer"
+	GameManager.apply_button_skin(currency_limit_dialog.get_ok_button())
 	add_child(currency_limit_dialog)
 
 	# Conteneur extérieur avec de vraies marges.
@@ -313,6 +315,7 @@ func _make_nav_button(label_text: String) -> Button:
 	button.add_theme_stylebox_override(
 		"pressed", _make_panel_style(ACCENT_COLOR, 14)
 	)
+	GameManager.apply_button_skin(button)
 	return button
 
 # Permet de créer un cadre de couleur avec des coins arrondis
@@ -442,6 +445,7 @@ func _show_games() -> void:
 		game_button.custom_minimum_size = Vector2(0, 100)
 		game_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		game_button.add_theme_font_size_override("font_size", 22)
+		GameManager.apply_button_skin(game_button)
 
 		if mini_game["id"] == "mystery_doors":
 			game_button.pressed.connect(_show_not_enough_credit)
@@ -466,6 +470,7 @@ func _show_not_enough_credit() -> void:
 		var back_button := Button.new()
 		back_button.text = "Retour aux mini-jeux"
 		back_button.pressed.connect(_show_games)
+		GameManager.apply_button_skin(back_button)
 		content.add_child(back_button)
 		return
 	
@@ -567,6 +572,7 @@ func _show_collection() -> void:
 		var pressed_style: StyleBoxFlat = card_style.duplicate()
 		pressed_style.bg_color = Color("#1F3B2F")
 		card.add_theme_stylebox_override("pressed", pressed_style)
+		GameManager.apply_button_skin(card)
 
 		# Contenu vertical de la carte
 		var card_content := VBoxContainer.new()
@@ -583,7 +589,7 @@ func _show_collection() -> void:
 		character_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		character_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-		var image_path: String = CHARACTERS_IMAGE_PATH + str(character.get("image", ""))
+		var image_path := _get_character_preview_path(character)
 		if image_path != "":
 			var texture := load(image_path) as Texture2D
 			if texture != null:
@@ -656,6 +662,16 @@ func _get_rarity_color(character_rarity_lvl: int) -> Color:
 		rarity_color = Color("#000000")
 		
 	return rarity_color
+
+func _get_character_preview_path(character: Dictionary) -> String:
+	var image_name := str(character.get("image", ""))
+	var image_stem := image_name.get_basename()
+	var preview_name := image_stem + "_preview.png"
+
+	var preview_path := CHARACTER_PREVIEW_PATH + preview_name
+	if ResourceLoader.exists(preview_path):
+		return preview_path
+	return CHARACTERS_IMAGE_PATH + image_name
 
 # Charge la vue "Détail de figurine"
 func _show_figurine_details(figurine: Dictionary) -> void:
@@ -782,12 +798,14 @@ func _show_figurine_details(figurine: Dictionary) -> void:
 			sell_value
 		)
 	)
+	GameManager.apply_button_skin(sell_button)
 	content.add_child(sell_button)
 
 	var back_button := Button.new()
 	back_button.text = "← Retour à la collection"
 	back_button.custom_minimum_size = Vector2(0, 45)
 	back_button.pressed.connect(_show_collection)
+	GameManager.apply_button_skin(back_button)
 	content.add_child(back_button)
 
 # Permet de revendre une figurine et de regagner des points
@@ -853,6 +871,7 @@ func _add_pack_button(
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.add_theme_font_size_override("font_size", 19)
 	button.pressed.connect(_buy_pack.bind(pack_id))
+	GameManager.apply_button_skin(button)
 	content.add_child(button)
 
 # Permet d'acheter un pack
@@ -920,12 +939,14 @@ func _show_pack_results(result: Dictionary) -> void:
 	return_shop_button.text = "← Retour à la boutique"
 	return_shop_button.custom_minimum_size = Vector2(0, 48)
 	return_shop_button.pressed.connect(_show_shop)
+	GameManager.apply_button_skin(return_shop_button)
 	content.add_child(return_shop_button)
 
 	var view_collection_button := Button.new()
 	view_collection_button.text = "🧸 Voir ma collection"
 	view_collection_button.custom_minimum_size = Vector2(0, 48)
 	view_collection_button.pressed.connect(_show_collection)
+	GameManager.apply_button_skin(view_collection_button)
 	content.add_child(view_collection_button)
 
 # Permet de vérifier si les points ont besoin d'une recharge (en dessous de 10 points) ou pas

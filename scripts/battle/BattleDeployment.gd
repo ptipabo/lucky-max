@@ -738,6 +738,17 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
+	if (
+		is_pointer_press
+		and current_phase == BattlePhase.PLAYER_ACTIONS
+		and not pending_action.is_empty()
+	):
+		var target_instance_id := _get_enemy_figure_at_position(pointer_position)
+		if target_instance_id != -1:
+			_resolve_character_action(target_instance_id)
+			get_viewport().set_input_as_handled()
+			return
+
 	if not is_dragging_figure or drag_preview == null:
 		return
 
@@ -793,6 +804,18 @@ func _get_opponent_heart_hitbox() -> Rect2:
 		Vector2(center_x - cell_size / 2.0, label_rect.position.y),
 		Vector2(cell_size, label_rect.size.y)
 	)
+
+func _get_enemy_figure_at_position(pointer_position: Vector2) -> int:
+	for index in range(enemy_figure_visuals.size() - 1, -1, -1):
+		var sprite := enemy_figure_visuals[index]
+		if not is_instance_valid(sprite) or not sprite.visible:
+			continue
+		if not sprite.get_global_rect().has_point(pointer_position):
+			continue
+		for instance_id in enemy_figure_positions:
+			if figure_visuals.get(int(instance_id)) == sprite:
+				return int(instance_id)
+	return -1
 
 func _cancel_figure_drag() -> void:
 	if drag_preview != null:
@@ -1098,7 +1121,9 @@ func _create_combat_button() -> void:
 	starting_player_dialog = AcceptDialog.new()
 	starting_player_dialog.title = "Tirage au sort"
 	starting_player_dialog.dialog_text = ""
+	starting_player_dialog.ok_button_text = "Continuer"
 	starting_player_dialog.confirmed.connect(_begin_combat)
+	GameManager.apply_button_skin(starting_player_dialog.get_ok_button())
 	add_child(starting_player_dialog)
 
 	combat_button = Button.new()
@@ -1106,6 +1131,7 @@ func _create_combat_button() -> void:
 	combat_button.custom_minimum_size = Vector2(0, 48)
 	combat_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	combat_button.visible = false
+	GameManager.apply_button_skin(combat_button)
 
 	main_layout.add_child(combat_button)
 	combat_button.pressed.connect(_on_combat_button_pressed)
@@ -1136,6 +1162,7 @@ func _on_combat_button_pressed() -> void:
 	deployment_confirmed = true
 	combat_button.disabled = true
 	combat_button.text = "DÉPLOIEMENT VALIDÉ !"
+	GameManager.apply_button_skin(combat_button)
 	player_starts = randi_range(0, 1) == 0
 	starting_player_dialog.dialog_text = (
 		"Pile ! Tu commences."
@@ -1273,21 +1300,7 @@ func _create_combat_controls() -> void:
 	phase_button_margin.add_child(phase_button)
 
 func _apply_action_button_style(button: Button) -> void:
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color("#54423B")
-	normal.border_color = Color("#FFC83C")
-	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(18)
-	normal.set_content_margin_all(8)
-	button.add_theme_stylebox_override("normal", normal)
-
-	var hover: StyleBoxFlat = normal.duplicate()
-	hover.bg_color = Color("#675247")
-	button.add_theme_stylebox_override("hover", hover)
-
-	var pressed: StyleBoxFlat = normal.duplicate()
-	pressed.bg_color = Color("#3B302A")
-	button.add_theme_stylebox_override("pressed", pressed)
+	GameManager.apply_button_skin(button)
 	button.add_theme_color_override("font_color", Color("#FFC83C"))
 	button.add_theme_color_override("font_hover_color", Color("#FFF2D5"))
 
@@ -1312,6 +1325,7 @@ func _update_combat_ui() -> void:
 		if current_phase == BattlePhase.PLAYER_MOVEMENT
 		else "Fin du tour"
 	)
+	GameManager.apply_button_skin(phase_button)
 	var can_act: bool = (
 		current_phase == BattlePhase.PLAYER_ACTIONS
 		and selected_actor_id > 0
@@ -1398,6 +1412,7 @@ func _populate_technique_buttons(instance_id: int) -> void:
 		button.set_meta("technique_id", str(technique_id))
 		button.text = _get_technique_emoji(str(technique_id))
 		button.tooltip_text = str(technique.get("name", technique_id))
+		GameManager.apply_button_skin(button)
 		button.disabled = false
 		slot_index += 1
 
@@ -1884,6 +1899,7 @@ func _show_battle_result_overlay(is_victory: bool, result_detail: String) -> voi
 	return_button.text = "Retour à l'aventure"
 	return_button.custom_minimum_size.y = 44
 	return_button.pressed.connect(_on_result_return_pressed)
+	GameManager.apply_button_skin(return_button)
 	layout.add_child(return_button)
 
 func _on_result_return_pressed() -> void:
