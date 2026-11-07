@@ -124,6 +124,8 @@ func _build_interface() -> void:
 	details_dialog = AcceptDialog.new()
 	details_dialog.title = "Statistiques du personnage"
 	details_dialog.ok_button_text = "Fermer"
+	details_dialog.get_label().autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	details_dialog.get_label().custom_minimum_size.x = 280
 	add_child(details_dialog)
 
 
@@ -230,14 +232,18 @@ func _create_character_card(entry: Dictionary) -> void:
 	var stats: Dictionary = character.get("stats", {})
 	var sort_key: String = SORT_OPTIONS[current_sort_index]["key"]
 
-	var card := PanelContainer.new()
+	var card := Button.new()
 	card.custom_minimum_size = Vector2(0, 145)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.focus_mode = Control.FOCUS_NONE
+	card.tooltip_text = "Sélectionner " + character_name
+	card.pressed.connect(_on_character_pressed.bind(instance_id))
 
 	var card_style := StyleBoxFlat.new()
 	card_style.bg_color = Color("#29483B")
 	card_style.set_corner_radius_all(8)
 	card_style.set_border_width_all(3)
+	card_style.border_color = _get_rarity_color(int(character.get("rarity", 0)))
 
 	if selected_instances.has(instance_id):
 		card_style.border_color = Color("#FFD65A")
@@ -246,19 +252,45 @@ func _create_character_card(entry: Dictionary) -> void:
 	else:
 		card_style.border_color = Color("#806D4A")
 
-	card.add_theme_stylebox_override("panel", card_style)
+	card.add_theme_stylebox_override("normal", card_style)
+	var hover_style: StyleBoxFlat = card_style.duplicate()
+	hover_style.bg_color = Color("#365C49")
+	card.add_theme_stylebox_override("hover", hover_style)
+	var pressed_style: StyleBoxFlat = card_style.duplicate()
+	pressed_style.bg_color = Color("#1F3B2F")
+	card.add_theme_stylebox_override("pressed", pressed_style)
 	grid.add_child(card)
+
+	var card_margin := MarginContainer.new()
+	card_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	card_margin.add_theme_constant_override("margin_left", 6)
+	card_margin.add_theme_constant_override("margin_right", 6)
+	card_margin.add_theme_constant_override("margin_top", 4)
+	card_margin.add_theme_constant_override("margin_bottom", 4)
+	card_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.add_child(card_margin)
 
 	var layout := VBoxContainer.new()
 	layout.add_theme_constant_override("separation", 3)
-	card.add_child(layout)
+	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	layout.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card_margin.add_child(layout)
 
 	# Illustration.
+	var image_container := CenterContainer.new()
+	image_container.custom_minimum_size = Vector2(0, 76)
+	image_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	image_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layout.add_child(image_container)
+
 	var image := TextureRect.new()
-	image.custom_minimum_size = Vector2(0, 76)
-	image.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	image.custom_minimum_size = Vector2(72, 72)
+	image.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	image.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var image_path: String = CHARACTER_IMAGE_PATH + str(
 		character.get("image", "")
@@ -267,7 +299,7 @@ func _create_character_card(entry: Dictionary) -> void:
 	if ResourceLoader.exists(image_path):
 		image.texture = load(image_path) as Texture2D
 
-	layout.add_child(image)
+	image_container.add_child(image)
 
 	# Nom.
 	var name_label := Label.new()
@@ -275,6 +307,7 @@ func _create_character_card(entry: Dictionary) -> void:
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.add_theme_font_size_override("font_size", 11)
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.add_child(name_label)
 
 	# Caractéristique correspondant au tri.
@@ -292,19 +325,14 @@ func _create_character_card(entry: Dictionary) -> void:
 		"font_color",
 		Color("#F2D58B")
 	)
+	attribute_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.add_child(attribute_label)
 
 	# Boutons.
 	var buttons := HBoxContainer.new()
+	buttons.alignment = BoxContainer.ALIGNMENT_END
+	buttons.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.add_child(buttons)
-
-	var select_button := Button.new()
-	select_button.text = "Choisir"
-	select_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	select_button.pressed.connect(
-		_on_character_pressed.bind(instance_id)
-	)
-	buttons.add_child(select_button)
 
 	var info_button := Button.new()
 	info_button.text = "ⓘ"
@@ -313,6 +341,23 @@ func _create_character_card(entry: Dictionary) -> void:
 		_show_character_details.bind(entry)
 	)
 	buttons.add_child(info_button)
+
+func _get_rarity_color(rarity: int) -> Color:
+	match rarity:
+		1:
+			return Color("#A0E3FF")
+		2:
+			return Color("#7CDC85")
+		3:
+			return Color("#C27FD3")
+		4:
+			return Color("#FFAA6B")
+		5:
+			return Color("#FFEF80")
+		6:
+			return Color("#4A27B5")
+		_:
+			return Color("#806D4A")
 
 
 # --------------------------------------------------

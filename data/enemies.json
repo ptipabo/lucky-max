@@ -14,7 +14,8 @@
 			"Je te conseille de rebrousser chemin avant qu'il ne soit trop tard."
 		],
 		"team_id": "enemy_team_01",
-		"team": ["cat_mage", "frog_king", "panda_ninja"]
+		"team": ["cat_mage", "frog_king", "panda_ninja"],
+		"reward": 10
 	},
 	{
 		"id": "jade_guardian",
@@ -24,7 +25,9 @@
 		"portrait": "res://assets/enemies/jade_guardian.png",
 		"description": "Un protecteur des anciennes ruines qui veille sur les vestiges de son peuple.",
 		"dialogue_lines": ["Étranger, tu avances sur une terre sacrée. Prouve que tes intentions sont dignes de franchir ces portes."],
-		"team_id": "enemy_team_02"
+		"team_id": "enemy_team_02",
+		"team": ["cat_mage", "frog_king", "panda_ninja"],
+		"reward": 20
 	},
 	{
 		"id": "relic_hunter",
@@ -34,7 +37,9 @@
 		"portrait": "res://assets/enemies/relic_hunter.png",
 		"description": "Une chasseuse de trésors rusée qui recherche les artefacts les plus rares.",
 		"dialogue_lines": ["Je vois que nous avons les mêmes goûts ! Mais je suis arrivée la première. Cette relique sera à moi."],
-		"team_id": "enemy_team_03"
+		"team_id": "enemy_team_03",
+		"team": ["cat_mage", "frog_king", "panda_ninja"],
+		"reward": 30
 	},
 	{
 		"id": "sun_priest",
@@ -44,7 +49,9 @@
 		"portrait": "res://assets/enemies/sun_priest.png",
 		"description": "Un gardien du savoir ancien qui protège le temple du soleil.",
 		"dialogue_lines": ["Le soleil éclaire ceux qui savent respecter les anciens. Voyons si tu mérites de poursuivre ton chemin."],
-		"team_id": "enemy_team_04"
+		"team_id": "enemy_team_04",
+		"team": ["cat_mage", "frog_king", "panda_ninja"],
+		"reward": 40
 	},
 	{
 		"id": "mercenary_captain",
@@ -54,7 +61,9 @@
 		"portrait": "res://assets/enemies/mercenary_captain.png",
 		"description": "Un chef de mercenaires uniquement intéressé par les richesses de la cité.",
 		"dialogue_lines": ["Je ne suis pas venu ici pour discuter. Donne-moi tes cartes et disparais de mon chemin !"],
-		"team_id": "enemy_team_05"
+		"team_id": "enemy_team_05",
+		"team": ["cat_mage", "frog_king", "panda_ninja"],
+		"reward": 50
 	},
 	{
 		"id": "ancient_sentinel",
@@ -64,7 +73,9 @@
 		"portrait": "res://assets/enemies/ancient_sentinel.png",
 		"description": "Une sentinelle chargée de garder le passage vers les hauteurs.",
 		"dialogue_lines": ["Peu ont atteint ce lieu. Si tu souhaites continuer, tu devras montrer ta force."],
-		"team_id": "enemy_team_06"
+		"team_id": "enemy_team_06",
+		"team": ["cat_mage", "frog_king", "panda_ninja"],
+		"reward": 60
 	},
 	{
 		"id": "high_priest",
@@ -74,7 +85,9 @@
 		"portrait": "res://assets/enemies/high_priest.png",
 		"description": "La gardienne des secrets qui entourent la cité perdue.",
 		"dialogue_lines": ["Tu approches du dernier sanctuaire. Mais certains secrets doivent rester enfouis..."],
-		"team_id": "enemy_team_07"
+		"team_id": "enemy_team_07",
+		"team": ["cat_mage", "frog_king", "panda_ninja"],
+		"reward": 70
 	},
 	{
 		"id": "forgotten_ruler",
@@ -84,7 +97,9 @@
 		"portrait": "res://assets/enemies/forgotten_ruler.png",
 		"description": "Le mystérieux protecteur de la cité perdue.",
 		"dialogue_lines": ["Tu as traversé mes terres, vaincu mes gardiens et défié les anciens. Te voici enfin devant le dernier rempart."],
-		"team_id": "enemy_team_08"
+		"team_id": "enemy_team_08",
+		"team": ["cat_mage", "frog_king", "panda_ninja"],
+		"reward": 80
 	},
 	{
 		"id": "balham",
@@ -94,7 +109,9 @@
 		"portrait": "res://assets/enemies/balham.png",
 		"description": "Le protecteur des vivants contre les forces du mal qui sévissent la nuit.",
 		"dialogue_lines": ["ô mortel, tu oses pénétrer dans nos plus sombres contrées. Prouve-moi ta valeur et je jugerai si tu es digne de t'aventurer plus loin dans ce royaume."],
-		"team_id": "enemy_team_09"
+		"team_id": "enemy_team_09",
+		"team": ["cat_mage", "frog_king", "panda_ninja"],
+		"reward": 90
 	}
 	]
 }

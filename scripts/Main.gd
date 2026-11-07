@@ -40,6 +40,8 @@ var doors_game_started: bool = false
 var points: int = 0
 var current_tab: String = GAMES_TAB_NAME
 var points_label: Label
+var gems_label: Label
+var currency_limit_dialog: AcceptDialog
 var recharge_background: PanelContainer
 var recharge_label: Label
 var content: VBoxContainer
@@ -54,8 +56,11 @@ func _ready() -> void:
 
 	# Permet de mettre à jour l'affichage des points
 	GameManager.points_changed.connect(_on_points_changed)
+	GameManager.gems_changed.connect(_on_gems_changed)
+	GameManager.currency_limit_reached.connect(_on_currency_limit_reached)
 	# On charge les points sauvegardés
 	_on_points_changed(GameManager.points)
+	_on_gems_changed(GameManager.gems)
 	GameManager.collection_changed.connect(_on_collection_changed)
 
 	# Par défaut, on affiche la vue "Mini-jeux"
@@ -81,6 +86,11 @@ func _build_interface() -> void:
 	# on pourra quand même cliquer sur ce qu'il y a derrière
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
+
+	currency_limit_dialog = AcceptDialog.new()
+	currency_limit_dialog.title = "Maximum atteint"
+	currency_limit_dialog.ok_button_text = "Fermer"
+	add_child(currency_limit_dialog)
 
 	# Conteneur extérieur avec de vraies marges.
 	var scene_margins := MarginContainer.new()
@@ -108,10 +118,30 @@ func _build_interface() -> void:
 	
 	# Bloc du compteur : sa taille est indépendante du fond.
 	var points_block := Control.new()
-	points_block.custom_minimum_size = Vector2(0, 64)
+	points_block.custom_minimum_size = Vector2(215, 64)
 	points_block.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	points_block.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	header.add_child(points_block)
+
+	var gems_background := PanelContainer.new()
+	gems_background.custom_minimum_size = Vector2(132, 48)
+	gems_background.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var gems_style_box := StyleBoxFlat.new()
+	gems_style_box.bg_color = BG_COLOR
+	gems_style_box.border_color = ACCENT_COLOR
+	gems_style_box.set_border_width_all(2)
+	gems_style_box.set_corner_radius_all(24)
+	gems_style_box.set_content_margin_all(8.0)
+	gems_background.add_theme_stylebox_override("panel", gems_style_box)
+	header.add_child(gems_background)
+
+	gems_label = Label.new()
+	gems_label.text = "💎 " + str(GameManager.gems)
+	gems_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	gems_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	gems_label.add_theme_color_override("font_color", ACCENT_COLOR)
+	gems_label.add_theme_font_size_override("font_size", 18)
+	gems_background.add_child(gems_label)
 
 	# Fond fixe.
 	var points_background := PanelContainer.new()
@@ -377,6 +407,7 @@ func _on_team_confirmed(enemy_data: Dictionary, selected_instance_ids: Array) ->
 	deployment.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	deployment.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	deployment.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	deployment.return_to_adventure_requested.connect(_show_adventure)
 	
 	deployment.configure(enemy_data, selected_instance_ids)
 
@@ -503,10 +534,10 @@ func _show_collection() -> void:
 	content.add_child(scroll)
 
 	var grid := GridContainer.new()
-	grid.columns = 2
+	grid.columns = 4
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	grid.add_theme_constant_override("h_separation", 10)
-	grid.add_theme_constant_override("v_separation", 10)
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 8)
 	scroll.add_child(grid)
 
 	for figurine in figurines:
@@ -518,24 +549,36 @@ func _show_collection() -> void:
 		
 		# Carte du personnage
 		var card := Button.new()
-		card.custom_minimum_size = Vector2(0, 180)
+		card.custom_minimum_size = Vector2(0, 145)
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		card.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		card.focus_mode = Control.FOCUS_NONE
 
-		card.add_theme_stylebox_override("normal", _make_panel_style(_get_rarity_color(character.get("rarity", 0)), 12))
+		var card_style := StyleBoxFlat.new()
+		card_style.bg_color = Color("#29483B")
+		card_style.border_color = _get_rarity_color(character.get("rarity", 0))
+		card_style.set_corner_radius_all(8)
+		card_style.set_border_width_all(3)
+		card_style.set_content_margin_all(6)
+		card.add_theme_stylebox_override("normal", card_style)
+		var hover_style: StyleBoxFlat = card_style.duplicate()
+		hover_style.bg_color = Color("#365C49")
+		card.add_theme_stylebox_override("hover", hover_style)
+		var pressed_style: StyleBoxFlat = card_style.duplicate()
+		pressed_style.bg_color = Color("#1F3B2F")
+		card.add_theme_stylebox_override("pressed", pressed_style)
 
 		# Contenu vertical de la carte
 		var card_content := VBoxContainer.new()
 		card_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		card_content.add_theme_constant_override("separation", 4)
+		card_content.add_theme_constant_override("separation", 3)
 		card_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(card_content)
 
 		# Image du personnage
 		var character_image := TextureRect.new()
-		character_image.custom_minimum_size = Vector2(100, 105)
+		character_image.custom_minimum_size = Vector2(0, 76)
 		character_image.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		character_image.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		character_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		character_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		character_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -548,33 +591,25 @@ func _show_collection() -> void:
 			else:
 				push_warning("Image introuvable : " + image_path)
 		
-		# Conteneur pour ajouter une marge autour de l'image
-		var image_margin := MarginContainer.new()
-		image_margin.add_theme_constant_override("margin_top", 8)
-		image_margin.add_theme_constant_override("margin_bottom", 4)
-		image_margin.add_theme_constant_override("margin_left", 8)
-		image_margin.add_theme_constant_override("margin_right", 8)
-		image_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-		# Ajouter l'image dans le conteneur de marges
-		image_margin.add_child(character_image)
-		card_content.add_child(image_margin)
+		card_content.add_child(character_image)
 
 		# Nom du personnage
 		var name_label := Label.new()
 		name_label.text = str(character.get("name", "Inconnu"))
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		name_label.add_theme_font_size_override("font_size", 16)
+		name_label.add_theme_font_size_override("font_size", 11)
 		name_label.add_theme_color_override("font_color", TEXT_COLOR)
 		name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card_content.add_child(name_label)
 
 		# Rareté
 		var rarity_label := Label.new()
-		rarity_label.text = _get_rarity_label(character.get("rarity", 0))
+		rarity_label.text = "Rareté : " + _get_rarity_label(character.get("rarity", 0))
 		rarity_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		rarity_label.add_theme_font_size_override("font_size", 13)
-		rarity_label.add_theme_color_override("font_color", TEXT_COLOR)
+		rarity_label.add_theme_font_size_override("font_size", 10)
+		rarity_label.add_theme_color_override("font_color", Color("#F2D58B"))
+		rarity_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card_content.add_child(rarity_label)
 
 		# Ouvrir les détails au clic
@@ -901,6 +936,18 @@ func _on_points_changed(new_total: int) -> void:
 		points_label.text = str(points) + " points"
 	
 	_update_recharge_label()
+
+func _on_gems_changed(new_total: int) -> void:
+	if is_instance_valid(gems_label):
+		gems_label.text = "💎 " + str(new_total)
+
+func _on_currency_limit_reached(currency_name: String) -> void:
+	var currency_label := "points" if currency_name == "points" else "gemmes"
+	currency_limit_dialog.dialog_text = (
+		"Le nombre maximal de " + currency_label
+		+ " (999 999) est atteint."
+	)
+	currency_limit_dialog.popup_centered(Vector2i(360, 140))
 
 # Permet de recharger la collection si jamais elle est modifiée pendant qu'on est sur la vue Collection
 func _on_collection_changed() -> void:

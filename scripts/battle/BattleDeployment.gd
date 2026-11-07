@@ -1,6 +1,7 @@
 extends Control
 
 signal starting_player_decided(player_starts: bool)
+signal return_to_adventure_requested
 
 enum BattlePhase { DEPLOYMENT, PLAYER_MOVEMENT, PLAYER_ACTIONS, ENEMY_TURN, FINISHED }
 
@@ -36,6 +37,7 @@ var combat_button_spacer: Control
 var starting_player_dialog: AcceptDialog
 var player_starts: bool = false
 var current_phase: int = BattlePhase.DEPLOYMENT
+var battle_result_shown: bool = false
 var turn_status_label: Label
 var unit_health: Dictionary = {}
 var enemy_figure_positions: Dictionary = {}
@@ -1520,7 +1522,14 @@ func _resolve_character_action(target_id: int) -> void:
 	if pending_action == "attack":
 		if target_id > 0:
 			return
-		_apply_damage(target_id, int(actor_stats.get("attack", 0)))
+		_apply_damage(
+			target_id,
+			int(actor_stats.get("attack", 0)),
+			"physical",
+			0,
+			true,
+			str(actor.get("data", {}).get("name", "Figurine alliée"))
+		)
 	else:
 		var technique: Dictionary = GameManager.techniques_catalog.get(
 			pending_action,
@@ -1532,7 +1541,9 @@ func _resolve_character_action(target_id: int) -> void:
 				target_id,
 				abs(value),
 				"magic",
-				int(actor_stats.get("magic", 0))
+				int(actor_stats.get("magic", 0)),
+				true,
+				str(actor.get("data", {}).get("name", "Figurine alliée"))
 			)
 			if hit:
 				_try_apply_side_effect(target_id, technique)
@@ -1601,7 +1612,8 @@ func _apply_damage(
 	amount: int,
 	damage_type: String = "physical",
 	magic_bonus: int = 0,
-	can_dodge: bool = true
+	can_dodge: bool = true,
+	source_name: String = ""
 ) -> bool:
 	if amount <= 0 or not unit_health.has(instance_id):
 		return false
@@ -1618,7 +1630,9 @@ func _apply_damage(
 			var character_name := str(
 				target_figure.get("data", {}).get("name", "La figurine")
 			)
-			_show_combat_message(character_name + " esquive l'attaque !")
+			var attacker_name := source_name if not source_name.is_empty() else "l'attaque"
+			_show_combat_message(character_name + " esquive " + attacker_name + " !")
+			_flash_unit(instance_id, Color("#73D99A"))
 			return false
 
 	if damage_type == "magic":
@@ -1631,6 +1645,21 @@ func _apply_damage(
 		defending_units.erase(instance_id)
 	amount = maxi(1, int(ceil(float(amount) - effective_defense)))
 	unit_health[instance_id] = maxi(0, int(unit_health[instance_id]) - amount)
+	var target_name := str(target_figure.get("data", {}).get("name", "Figurine"))
+	var damage_source := source_name
+	if damage_source.is_empty():
+		damage_source = "la magie" if damage_type == "magic" else "l'attaque"
+	if damage_type == "effect":
+		damage_source = source_name if not source_name.is_empty() else "un effet"
+	_show_combat_message(
+		"%s subit %d dégâts (%s)." % [target_name, amount, damage_source]
+	)
+	var flash_color := Color("#F06B5F")
+	if damage_type == "magic":
+		flash_color = Color("#6CCCF0")
+	elif damage_type == "effect":
+		flash_color = Color("#F2A64A")
+	_flash_unit(instance_id, flash_color)
 	_update_unit_health_display(instance_id)
 	if int(unit_health[instance_id]) == 0:
 		if instance_id > 0:
@@ -1649,14 +1678,30 @@ func _apply_damage(
 		status_effects.erase(instance_id)
 	return true
 
+func _flash_unit(instance_id: int, flash_color: Color) -> void:
+	var sprite: TextureRect = figure_visuals.get(instance_id)
+	if sprite == null or not is_instance_valid(sprite):
+		return
+	sprite.modulate = Color.WHITE
+	var tween := create_tween()
+	tween.tween_property(sprite, "modulate", flash_color, 0.08)
+	tween.tween_property(sprite, "modulate", Color.WHITE, 0.22)
+
 func _apply_healing(instance_id: int, amount: int) -> void:
 	if amount <= 0 or not unit_health.has(instance_id):
 		return
+	var previous_health: int = int(unit_health[instance_id])
 	unit_health[instance_id] = mini(
 		int(unit_max_health[instance_id]),
 		int(unit_health[instance_id]) + amount
 	)
 	_update_unit_health_display(instance_id)
+	var healed_amount: int = int(unit_health[instance_id]) - previous_health
+	if healed_amount > 0:
+		var figure := _get_unit_figure(instance_id)
+		var character_name := str(figure.get("data", {}).get("name", "Figurine"))
+		_show_combat_message("%s récupère %d PV." % [character_name, healed_amount])
+		_flash_unit(instance_id, Color("#73D99A"))
 	var effects: Array = status_effects.get(instance_id, [])
 	for index in range(effects.size() - 1, -1, -1):
 		var effect_id := str(effects[index].get("id", ""))
@@ -1716,12 +1761,14 @@ func _tick_side_effects(player_side: bool) -> void:
 		for effect in effects:
 			var effect_id := str(effect.get("id", ""))
 			if effect_id in ["burn", "poison"]:
+				var effect_name := "brûlure" if effect_id == "burn" else "poison"
 				_apply_damage(
 					instance_id,
 					int(effect.get("power", 1)),
 					"effect",
 					0,
-					false
+					false,
+					effect_name
 				)
 				if not unit_health.has(instance_id):
 					continue
@@ -1756,17 +1803,91 @@ func _on_combat_message_timeout() -> void:
 	combat_message_label.visible = false
 
 func _check_battle_over() -> bool:
+	if current_phase == BattlePhase.FINISHED:
+		return true
 	if opponent_heart_lives <= 0 or enemy_figure_positions.is_empty():
-		current_phase = BattlePhase.FINISHED
-		turn_status_label.text = "Victoire !"
-		_update_combat_ui()
+		_finish_battle(true)
 		return true
 	if player_heart_lives <= 0 or player_figure_positions.is_empty():
-		current_phase = BattlePhase.FINISHED
-		turn_status_label.text = "Défaite..."
-		_update_combat_ui()
+		_finish_battle(false)
 		return true
 	return false
+
+func _finish_battle(is_victory: bool) -> void:
+	if battle_result_shown:
+		return
+	battle_result_shown = true
+	current_phase = BattlePhase.FINISHED
+	turn_status_label.text = "Victoire !" if is_victory else "Défaite..."
+	_update_combat_ui()
+
+	var result_detail := "Aucune gemme gagnée."
+	if is_victory:
+		var reward := maxi(0, int(enemy_data.get("reward", 0)))
+		var chance_multiplier := 0
+		for figure in selected_figures:
+			var stats: Dictionary = figure.get("data", {}).get("stats", {})
+			chance_multiplier += maxi(0, int(stats.get("chance", 0)))
+		var requested_gems := reward * chance_multiplier
+		var received_gems: int = GameManager.add_gems(requested_gems)
+		result_detail = "💎 +%d gemmes" % received_gems
+		if received_gems < requested_gems:
+			result_detail += "\nLe maximum de gemmes (999 999) est atteint."
+
+	_show_battle_result_overlay(is_victory, result_detail)
+
+func _show_battle_result_overlay(is_victory: bool, result_detail: String) -> void:
+	var overlay := ColorRect.new()
+	overlay.name = "BattleResultOverlay"
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.color = Color(0.02, 0.04, 0.03, 0.82)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.z_index = 200
+	add_child(overlay)
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(320, 210)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color("#183C32")
+	panel_style.border_color = Color("#FFC83C")
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(10)
+	panel_style.set_content_margin_all(18)
+	panel.add_theme_stylebox_override("panel", panel_style)
+	center.add_child(panel)
+
+	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 14)
+	panel.add_child(layout)
+
+	var title := Label.new()
+	title.text = "VICTOIRE !" if is_victory else "DÉFAITE"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 26)
+	title.add_theme_color_override("font_color", Color("#F2D58B"))
+	layout.add_child(title)
+
+	var detail := Label.new()
+	detail.text = result_detail
+	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail.add_theme_font_size_override("font_size", 18)
+	detail.add_theme_color_override("font_color", Color("#FFF2D5"))
+	layout.add_child(detail)
+
+	var return_button := Button.new()
+	return_button.text = "Retour à l'aventure"
+	return_button.custom_minimum_size.y = 44
+	return_button.pressed.connect(_on_result_return_pressed)
+	layout.add_child(return_button)
+
+func _on_result_return_pressed() -> void:
+	return_to_adventure_requested.emit()
 
 func _run_enemy_turn() -> void:
 	if current_phase != BattlePhase.ENEMY_TURN:
@@ -1915,17 +2036,27 @@ func _run_enemy_figure_turn(instance_id: int) -> void:
 			enemy_heart_attack_count += 1
 		else:
 			var target_id := int(target["instance_id"])
+			var enemy_name := str(figure.get("data", {}).get("name", "Adversaire"))
 			if action["type"] == "magic":
 				var hit := _apply_damage(
 					target_id,
 					int(action["damage"]),
 					"magic",
-					int(action["magic_bonus"])
+					int(action["magic_bonus"]),
+					true,
+					enemy_name
 				)
 				if hit:
 					_try_apply_side_effect(target_id, action["technique"])
 			else:
-				_apply_damage(target_id, int(action["damage"]))
+				_apply_damage(
+					target_id,
+					int(action["damage"]),
+					"physical",
+					0,
+					true,
+					enemy_name
+				)
 			enemy_figure_attack_count += 1
 	if not performed_action:
 		defending_units[instance_id] = true

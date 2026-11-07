@@ -2,6 +2,8 @@
 extends Node
 
 signal points_changed(new_total: int)
+signal gems_changed(new_total: int)
+signal currency_limit_reached(currency_name: String)
 signal collection_changed
 signal save_completed
 # Recharge automatique des points
@@ -9,6 +11,7 @@ signal recharge_status_changed(ready_at: int)
 
 const SAVE_PATH := "user://savegame.json"
 const SAVE_VERSION := 1
+const MAX_CURRENCY: int = 999999
 const CHARACTERS_CATALOG_PATH := "res://data/characters.json"
 const TECHNIQUES_CATALOG_PATH := "res://data/techniques.json"
 const RECHARGE_THRESHOLD: int = 10
@@ -21,6 +24,7 @@ var recharge_paused: bool = false
 var characters_catalog: Dictionary = {}
 var techniques_catalog: Dictionary = {}
 var points: int = 0
+var gems: int = 0
 var collection: Array = []
 var next_instance_id: int = 1
 
@@ -54,12 +58,34 @@ func add_points(amount: int) -> void:
 	if amount <= 0:
 		return
 
-	points += amount
+	var previous_points := points
+	points = mini(MAX_CURRENCY, points + amount)
+	if points == MAX_CURRENCY:
+		currency_limit_reached.emit("points")
+	if points == previous_points:
+		return
+
 	_update_recharge_schedule()
 	_save_game()
 	# On emet le signal disant que les points ont été modifiés et on précise leur nouveau montant
 	# afin que les autres scripts puissent le savoir
 	points_changed.emit(points)
+
+func add_gems(amount: int) -> int:
+	if amount <= 0:
+		return 0
+
+	var previous_gems := gems
+	gems = mini(MAX_CURRENCY, gems + amount)
+	var added_gems := gems - previous_gems
+	if gems == MAX_CURRENCY:
+		currency_limit_reached.emit("gems")
+	if added_gems <= 0:
+		return 0
+
+	_save_game()
+	gems_changed.emit(gems)
+	return added_gems
 
 # Permet de retirer des points du compteur du joueur
 func spend_points(amount: int) -> bool:
@@ -199,6 +225,7 @@ func _save_game() -> void:
 	var save_data: Dictionary = {
 		"version": SAVE_VERSION,
 		"points": points,
+		"gems": gems,
 		"collection": collection,
 		"next_instance_id": next_instance_id,
 		"recharge_ready_at": recharge_ready_at
@@ -226,6 +253,7 @@ func load_game() -> void:
 	if not FileAccess.file_exists(SAVE_PATH):
 		save_load_valid = true
 		points = 0
+		gems = 0
 		collection = []
 		next_instance_id = 1
 		_save_game()
@@ -263,6 +291,7 @@ func load_game() -> void:
 
 	# Validation des données avant leur chargement.
 	var loaded_points: Variant = data.get("points", 0)
+	var loaded_gems: Variant = data.get("gems", 0)
 	var loaded_collection: Variant = data.get("collection", [])
 	var loaded_next_id: Variant = data.get("next_instance_id", 1)
 	var loaded_recharge: Variant = data.get("recharge_ready_at", 0)
@@ -293,6 +322,21 @@ func load_game() -> void:
 	if loaded_points < 0:
 		push_error("Le solde sauvegardé est négatif.")
 		return
+	if loaded_gems == null:
+		loaded_gems = 0
+	if typeof(loaded_gems) == TYPE_FLOAT:
+		if not is_finite(loaded_gems) or loaded_gems != floor(loaded_gems):
+			push_error("Le solde de gemmes sauvegardé doit être un nombre entier.")
+			return
+		loaded_gems = int(loaded_gems)
+	elif typeof(loaded_gems) != TYPE_INT:
+		push_error("Le solde de gemmes sauvegardé est invalide.")
+		return
+	if loaded_gems < 0:
+		push_error("Le solde de gemmes sauvegardé est négatif.")
+		return
+	loaded_points = mini(MAX_CURRENCY, int(loaded_points))
+	loaded_gems = mini(MAX_CURRENCY, int(loaded_gems))
 
 	if typeof(loaded_collection) != TYPE_ARRAY:
 		push_error("La collection sauvegardée est invalide.")
@@ -375,6 +419,7 @@ func load_game() -> void:
 		item["level"] = int(loaded_level)
 	
 	points = loaded_points
+	gems = loaded_gems
 	collection = loaded_collection.duplicate(true)
 	next_instance_id = loaded_next_id
 	recharge_ready_at = loaded_recharge
