@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://dsy60ga5ucn1s"]
+
+[ext_resource type="Script" uid="uid://8p010pclad6j" path="res://scripts/collection/Collection.gd" id="1_fga76"]
+
+[node name="Collection" type="Control" unique_id=275226619]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_fga76")

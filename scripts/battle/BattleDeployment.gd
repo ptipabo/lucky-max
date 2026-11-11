@@ -95,8 +95,8 @@ func _build_interface() -> void:
 	main_layout.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 	# Petite marge autour de toute l'interface.
-	main_layout.offset_left = 12
-	main_layout.offset_right = -12
+	main_layout.offset_left = 0
+	main_layout.offset_right = 0
 	main_layout.offset_top = 12
 	main_layout.offset_bottom = -12
 
@@ -122,12 +122,12 @@ func _build_interface() -> void:
 	opponent_lives_label = Label.new()
 	opponent_lives_label.text = "♥ ♥ ♥"
 	opponent_lives_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	opponent_lives_label.add_theme_font_size_override("font_size", 25)
+	opponent_lives_label.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TITLE)
 	opponent_lives_label.add_theme_color_override(
 		"font_color", Color("#E85B5B")
 	)
-	opponent_lives_label.z_index = 100
-	opponent_lives_label.z_as_relative = false
+	main_layout.offset_left = 12
+	main_layout.offset_right = -12
 	opponent_lives_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	opponent_lives_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	opponent_heart_container.add_child(opponent_lives_label)
@@ -170,7 +170,7 @@ func _build_interface() -> void:
 	player_lives_label = Label.new()
 	player_lives_label.text = "♥ ♥ ♥"
 	player_lives_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	player_lives_label.add_theme_font_size_override("font_size", 25)
+	player_lives_label.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TITLE)
 	player_lives_label.add_theme_color_override(
 		"font_color", Color("#E85B5B")
 	)
@@ -469,7 +469,7 @@ func _refresh_player_figure_slots() -> void:
 		var figure_name := Label.new()
 		figure_name.text = str(character_data.get("name", "Figurine"))
 		figure_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		figure_name.add_theme_font_size_override("font_size", 11)
+		figure_name.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TEXT)
 		figure_name.clip_text = true
 		figure_name.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
@@ -1272,7 +1272,7 @@ func _create_combat_controls() -> void:
 		var technique_button := Button.new()
 		technique_button.custom_minimum_size = Vector2(48, 48)
 		technique_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		technique_button.add_theme_font_size_override("font_size", 24)
+		technique_button.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_BUTTON)
 		technique_button.set_meta("technique_id", "")
 		technique_button.pressed.connect(
 			_on_technique_button_pressed.bind(index)
@@ -1880,18 +1880,18 @@ func _show_battle_result_overlay(is_victory: bool, result_detail: String) -> voi
 	layout.add_theme_constant_override("separation", 14)
 	panel.add_child(layout)
 
-	var title := Label.new()
-	title.text = "VICTOIRE !" if is_victory else "DÉFAITE"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 26)
-	title.add_theme_color_override("font_color", Color("#F2D58B"))
-	layout.add_child(title)
+	layout.add_child(
+		GameManager.create_title_header(
+			"VICTOIRE !" if is_victory else "DÉFAITE",
+			26
+		)
+	)
 
 	var detail := Label.new()
 	detail.text = result_detail
 	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	detail.add_theme_font_size_override("font_size", 18)
+	detail.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TEXT)
 	detail.add_theme_color_override("font_color", Color("#FFF2D5"))
 	layout.add_child(detail)
 

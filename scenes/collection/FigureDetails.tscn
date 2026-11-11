@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://da71a788id27o"]
+
+[ext_resource type="Script" uid="uid://dg5vcsace3eyj" path="res://scripts/collection/FigureDetails.gd" id="1_p5o80"]
+
+[node name="FigureDetails" type="Control" unique_id=1317992670]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_p5o80")

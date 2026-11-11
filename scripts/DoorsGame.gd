@@ -69,12 +69,7 @@ func _build_game() -> void:
 	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	game_margins.add_child(layout)
 
-	var title := Label.new()
-	title.text = "Pierres sacrées"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 27)
-	title.add_theme_color_override("font_color", GOLD)
-	layout.add_child(title)
+	layout.add_child(GameManager.create_title_header("Pierres sacrées", 27))
 
 	instruction_label = Label.new()
 	instruction_label.text = "Choisis une divinité et découvre ce qu'elle t'offre."
@@ -182,7 +177,7 @@ func _build_game() -> void:
 	result_label.text = ""
 	result_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	result_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	result_label.add_theme_font_size_override("font_size", 25)
+	result_label.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TEXT)
 	result_label.add_theme_color_override("font_color", GOLD)
 	layout.add_child(result_label)
 
@@ -231,16 +226,13 @@ func _build_replay_overlay() -> void:
 
 	# On crée le cadre contenant le bouton "Rejouer"
 	var replay_container := VBoxContainer.new()
-	replay_container.add_theme_constant_override("separation", 16)
+	replay_container.add_theme_constant_override("separation", GameManager.FONT_SIZE_TEXT)
 	panel.add_child(replay_container)
 	
 	# On crée un titre pour ce cadre
-	var replay_title := Label.new()
-	replay_title.text = "Les Dieux ont parlés."
-	replay_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	replay_title.add_theme_font_size_override("font_size", 22)
-	replay_title.add_theme_color_override("font_color", GOLD)
-	replay_container.add_child(replay_title)
+	replay_container.add_child(
+		GameManager.create_title_header("Les Dieux ont parlés.", GameManager.FONT_SIZE_TITLE)
+	)
 
 	overlay_message = Label.new()
 	overlay_message.text = "Veux-tu retenter ta chance, aventurier ?"
@@ -253,7 +245,7 @@ func _build_replay_overlay() -> void:
 	replay_button = Button.new()
 	replay_button.text = "Rejouer"
 	replay_button.custom_minimum_size = Vector2(0, 52)
-	replay_button.add_theme_font_size_override("font_size", 21)
+	replay_button.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_BUTTON)
 	replay_button.pressed.connect(_on_replay_pressed)
 	GameManager.apply_button_skin(replay_button)
 	replay_container.add_child(replay_button)

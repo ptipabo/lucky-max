@@ -67,15 +67,16 @@ func _build_interface() -> void:
 	layout.set_anchors_and_offsets_preset(
 		Control.PRESET_FULL_RECT
 	)
+	layout.offset_left = 30
+	layout.offset_right = -30
 	layout.add_theme_constant_override("separation", 8)
-	layout.add_theme_constant_override("margin_left", 20)
-	layout.add_theme_constant_override("margin_right", 20)
 	layout.add_theme_constant_override("margin_top", 20)
 	layout.add_theme_constant_override("margin_bottom", 20)
 	add_child(layout)
 
 	# Bouton retour.
 	back_button = Button.new()
+	back_button.name = "BackButton"
 	back_button.text = "← Retour à l'aventure"
 	back_button.custom_minimum_size = Vector2(0, 45)
 	back_button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
@@ -85,12 +86,14 @@ func _build_interface() -> void:
 
 	# Présentation du personnage.
 	var character_header := VBoxContainer.new()
+	character_header.name = "CharacterHeader"
 	character_header.add_theme_constant_override("separation", 3)
 	layout.add_child(character_header)
 
 	name_label = Label.new()
+	name_label.name = "NameLabel"
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.add_theme_font_size_override("font_size", 25)
+	name_label.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TITLE)
 	name_label.add_theme_color_override(
 		"font_color",
 		Color("#E8C77B")
@@ -98,8 +101,9 @@ func _build_interface() -> void:
 	character_header.add_child(name_label)
 
 	title_label = Label.new()
+	title_label.name = "TitleLabel"
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_label.add_theme_font_size_override("font_size", 15)
+	title_label.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TEXT)
 	title_label.add_theme_color_override(
 		"font_color",
 		Color("#FFF0D0")
@@ -108,11 +112,13 @@ func _build_interface() -> void:
 
 	# Zone du portrait.
 	var portrait_container := CenterContainer.new()
+	portrait_container.name = "PortraitContainer"
 	portrait_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	portrait_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	layout.add_child(portrait_container)
 
 	portrait = TextureRect.new()
+	portrait.name = "Portrait"
 
 	# Taille maximale souhaitée pour le portrait.
 	portrait.custom_minimum_size = Vector2(280, 320)
@@ -128,6 +134,7 @@ func _build_interface() -> void:
 
 	# Boîte de dialogue.
 	var dialogue_panel := PanelContainer.new()
+	dialogue_panel.name = "DialoguePanel"
 	dialogue_panel.custom_minimum_size = Vector2(0, 190)
 
 	var panel_style := StyleBoxFlat.new()
@@ -145,14 +152,16 @@ func _build_interface() -> void:
 	layout.add_child(dialogue_panel)
 
 	var dialogue_layout := VBoxContainer.new()
+	dialogue_layout.name = "DialogueLayout"
 	dialogue_layout.add_theme_constant_override("separation", 12)
 	dialogue_panel.add_child(dialogue_layout)
 
 	dialogue_label = Label.new()
+	dialogue_label.name = "DialogueLabel"
 	dialogue_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	dialogue_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	dialogue_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	dialogue_label.add_theme_font_size_override("font_size", 17)
+	dialogue_label.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TEXT)
 	dialogue_label.add_theme_color_override(
 		"font_color",
 		Color("#FFF2D5")
@@ -160,6 +169,7 @@ func _build_interface() -> void:
 	dialogue_layout.add_child(dialogue_label)
 
 	next_button = Button.new()
+	next_button.name = "NextButton"
 	next_button.text = "Continuer"
 	next_button.custom_minimum_size = Vector2(0, 48)
 	next_button.pressed.connect(_on_next_pressed)

@@ -9,11 +9,23 @@ signal save_completed
 # Recharge automatique des points
 signal recharge_status_changed(ready_at: int)
 
+const TEXT_COLOR := Color("#FFF8E7")
 const SAVE_PATH := "user://savegame.json"
 const SAVE_VERSION := 1
 const MAX_CURRENCY: int = 999999
+const RARITY_COLOR_NORMAL := Color("#a0e3ff")
+const RARITY_COLOR_RARE := Color("#7cdc85")
+const RARITY_COLOR_SUPERRARE := Color("#c27fd3")
+const RARITY_COLOR_ULTRARARE := Color("#ffaa6b")
+const RARITY_COLOR_LEGENDARY := Color("#ffef80")
+const RARITY_COLOR_DIVINE := Color("4a27b5ff")
 const CHARACTERS_CATALOG_PATH := "res://data/characters.json"
 const TECHNIQUES_CATALOG_PATH := "res://data/techniques.json"
+const CHARACTERS_IMAGE_PATH := "res://assets/characters/"
+const CHARACTER_PREVIEW_PATH := "res://assets/characters/previews/"
+const TITLE_BACKGROUND_TEXTURE: Texture2D = preload(
+	"res://assets/backgrounds/title_bg.png"
+)
 const BUTTON_TEXTURES: Array[Texture2D] = [
 	preload("res://assets/backgrounds/button_extra_short.png"),
 	preload("res://assets/backgrounds/button_short.png"),
@@ -24,12 +36,18 @@ const BUTTON_TEXTURE_WIDTHS: Array[int] = [144, 279, 541, 783]
 const RECHARGE_THRESHOLD: int = 10
 const RECHARGE_AMOUNT: int = 10
 const RECHARGE_DELAY_SECONDS: int = 15#300
+const FONT_SIZE_TITLE := 36
+const FONT_SIZE_SUBTITLE := 34
+const FONT_SIZE_BUTTON := 32
+const FONT_SIZE_TEXT := 30
 
 var save_load_valid: bool = true
 var recharge_ready_at: int = 0
 var recharge_paused: bool = false
 var characters_catalog: Dictionary = {}
 var techniques_catalog: Dictionary = {}
+var ui_font: FontFile
+var title_font: FontFile
 var points: int = 0
 var gems: int = 0
 var collection: Array = []
@@ -37,6 +55,8 @@ var next_instance_id: int = 1
 
 
 func _ready() -> void:
+	ui_font = _load_font("res://assets/fonts/HWYGNRRW.ttf")
+	title_font = _load_font("res://assets/fonts/HWYGEXPD.ttf")
 	load_characters_catalog()
 	load_techniques_catalog()
 	load_game()
@@ -55,6 +75,14 @@ func _ready() -> void:
 	recharge_timer.timeout.connect(_check_recharge)
 	add_child(recharge_timer)
 	recharge_timer.start()
+
+func _load_font(font_path: String) -> FontFile:
+	var font := FontFile.new()
+	var error := font.load_dynamic_font(font_path)
+	if error != OK:
+		push_warning("Impossible de charger la police : " + font_path)
+		return null
+	return font
 
 func apply_button_skin(button: Button) -> void:
 	if not button.has_meta("skin_resize_connected"):
@@ -124,6 +152,35 @@ func _make_button_stylebox(texture: Texture2D) -> StyleBoxTexture:
 	style.content_margin_top = 14
 	style.content_margin_bottom = 14
 	return style
+
+func create_title_header(title_text: String, font_size: int = FONT_SIZE_TITLE) -> Control:
+	var title_container := Control.new()
+	title_container.custom_minimum_size = Vector2(0, 100)
+	title_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var title_background := TextureRect.new()
+	title_background.texture = TITLE_BACKGROUND_TEXTURE
+	title_background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	title_background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	title_background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	title_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title_container.add_child(title_background)
+
+	var title_label := Label.new()
+	title_label.text = title_text
+	title_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	title_label.offset_top = 30
+	title_label.offset_bottom = -12
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if title_font != null:
+		title_label.add_theme_font_override("font", title_font)
+	title_label.add_theme_font_size_override("font_size", font_size)
+	title_label.add_theme_color_override("font_color", Color.WHITE)
+	title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title_container.add_child(title_label)
+	return title_container
 
 # --------------------------------------------------
 # POINTS
@@ -230,6 +287,46 @@ func get_collection() -> Array:
 # Permet de connaître le nombre exacte de figurines possédées par le joueur
 func get_figurine_count() -> int:
 	return collection.size()
+
+# Permet de récupérer la couleur d'un niveau de rareté
+func _get_rarity_color(character_rarity_lvl: int) -> Color:
+	var rarity_color: Color
+	if character_rarity_lvl == 1:
+		rarity_color = RARITY_COLOR_NORMAL
+	elif character_rarity_lvl == 2:
+		rarity_color = RARITY_COLOR_RARE
+	elif character_rarity_lvl == 3:
+		rarity_color = RARITY_COLOR_SUPERRARE
+	elif character_rarity_lvl == 4:
+		rarity_color = RARITY_COLOR_ULTRARARE
+	elif character_rarity_lvl == 5:
+		rarity_color = RARITY_COLOR_LEGENDARY
+	elif character_rarity_lvl == 6:
+		rarity_color = RARITY_COLOR_DIVINE
+	else:
+		rarity_color = Color("#000000")
+		
+	return rarity_color
+
+# Permet de récupérer le nom d'un niveau de rareté
+func _get_rarity_label(character_rarity_lvl: int) -> String:
+	var rarity_label: String
+	if character_rarity_lvl == 1:
+		rarity_label = "Normale"
+	elif character_rarity_lvl == 2:
+		rarity_label = "Rare"
+	elif character_rarity_lvl == 3:
+		rarity_label = "Super rare"
+	elif character_rarity_lvl == 4:
+		rarity_label = "Ultra rare"
+	elif character_rarity_lvl == 5:
+		rarity_label = "Légendaire"
+	elif character_rarity_lvl == 6:
+		rarity_label = "Divin"
+	else:
+		rarity_label = "?"
+		
+	return rarity_label
 
 # Permet de mettre à jour le temps de recharge automatique des points
 func _update_recharge_schedule() -> void:
@@ -683,7 +780,7 @@ func purchase_pack(pack_id: String) -> Dictionary:
 
 	return {
 		"success": true,
-		"message": "Achat réussi !",
+		"message": "Vous obtenez... !",
 		"pack_name": str(pack["name"]),
 		"figurines": obtained
 	}

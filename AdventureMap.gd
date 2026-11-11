@@ -12,17 +12,6 @@ const ADVENTURE_BACKGROUND: Texture2D = preload("res://assets/backgrounds/advent
 const MAP_HEIGHT := 1250.0
 const NODE_SIZE := Vector2(76, 76)
 
-#const STAGES: Array[Dictionary] = [
-	#{"id": "stage_01", "name": "Entrée de la jungle", "unlocked": true, "enemy_id": "rival_explorer"},
-	#{"id": "stage_02", "name": "Sanctuaire oublié", "unlocked": false, "enemy_id": "jade_guardian"},
-	#{"id": "stage_03", "name": "Ruines de jade", "unlocked": false, "enemy_id": "relic_hunter"},
-	#{"id": "stage_04", "name": "Temple du soleil", "unlocked": false, "enemy_id": "sun_priest"},
-	#{"id": "stage_05", "name": "Cité engloutie", "unlocked": false, "enemy_id": "mercenary_captain"},
-	#{"id": "stage_06", "name": "Pont des anciens", "unlocked": false, "enemy_id": "ancient_sentinel"},
-	#{"id": "stage_07", "name": "Temple des serpents", "unlocked": false, "enemy_id": "high_priest"},
-	#{"id": "stage_08", "name": "Sanctuaire céleste", "unlocked": false, "enemy_id": "forgotten_ruler"}
-#]
-
 var stages_list: Array[Dictionary]
 
 var enemies_by_id: Dictionary = {}
@@ -142,12 +131,9 @@ func _build_interface() -> void:
 	header.add_theme_constant_override("separation", 4)
 	layout.add_child(header)
 
-	var title := Label.new()
-	title.text = "L'ANCIENNE CIVILISATION"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 21)
-	title.add_theme_color_override("font_color", GOLD_COLOR)
-	header.add_child(title)
+	header.add_child(
+		GameManager.create_title_header("L'ancienne civilisation", 21)
+	)
 
 	var subtitle := Label.new()
 	subtitle.text = "Explore les terres oubliées..."

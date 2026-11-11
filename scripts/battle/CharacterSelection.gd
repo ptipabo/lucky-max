@@ -62,12 +62,9 @@ func _build_interface() -> void:
 	add_child(main_layout)
 
 	# Titre.
-	var title := Label.new()
-	title.text = "Choisis tes combattants"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 25)
-	title.add_theme_color_override("font_color", Color("#F2D58B"))
-	main_layout.add_child(title)
+	main_layout.add_child(
+		GameManager.create_title_header("Choisis tes combattants", 25)
+	)
 
 	# Barre de tri.
 	var sort_container := HBoxContainer.new()
@@ -298,7 +295,7 @@ func _create_character_card(entry: Dictionary) -> void:
 		else _get_rarity_color(int(character.get("rarity", 0)))
 	)
 	if is_selected:
-		frame_style.shadow_color = Color(1.0, 0.75, 0.15, 0.85)
+		frame_style.shadow_color = Color(1.0, 0.749, 0.149, 0.5)
 		frame_style.shadow_size = 9
 	selection_frame.add_theme_stylebox_override("panel", frame_style)
 	card.add_child(selection_frame)
@@ -329,7 +326,7 @@ func _create_character_card(entry: Dictionary) -> void:
 	var name_label := Label.new()
 	name_label.text = character_name
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.add_theme_font_size_override("font_size", 11)
+	name_label.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TEXT)
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.add_child(name_label)
@@ -344,7 +341,7 @@ func _create_character_card(entry: Dictionary) -> void:
 		+ str(int(value))
 	)
 	attribute_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	attribute_label.add_theme_font_size_override("font_size", 10)
+	attribute_label.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TEXT)
 	attribute_label.add_theme_color_override(
 		"font_color",
 		Color("#F2D58B")
@@ -360,8 +357,8 @@ func _create_character_card(entry: Dictionary) -> void:
 	card_item.add_child(info_container)
 
 	var info_button := Button.new()
-	info_button.text = "ⓘ"
-	info_button.custom_minimum_size = Vector2(32, 30)
+	info_button.text = "Détails"
+	info_button.custom_minimum_size = Vector2(52, 30)
 	info_button.pressed.connect(
 		_show_character_details.bind(entry)
 	)
