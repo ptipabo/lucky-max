@@ -261,7 +261,7 @@
 		"attack": 8,
 		"defense": 8,
 		"escape": 1,
-		"chance": 0,
+		"chance": 1,
 		"moves": 3,
 		"techniques": ["fire","ice","thunder","heal","resurrection"]
 	  },
@@ -280,7 +280,7 @@
 		"attack": 6,
 		"defense": 8,
 		"escape": 1,
-		"chance": 0,
+		"chance": 1,
 		"moves": 4,
 		"techniques": ["fire","ice","thunder","wind","heal"]
 	  },
@@ -299,7 +299,7 @@
 		"attack": 14,
 		"defense": 11,
 		"escape": 2,
-		"chance": 0,
+		"chance": 1,
 		"moves": 3,
 		"techniques": ["fire","knight_shield"]
 	  },

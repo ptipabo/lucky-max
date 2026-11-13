@@ -47,6 +47,7 @@ var adventure_button: Button
 var collection_button: Button
 var shop_button: Button
 var screen_background: TextureRect
+var current_stage_id: String = ""
 
 func _ready() -> void:
 	var game_theme := Theme.new()
@@ -382,7 +383,8 @@ func _show_adventure() -> void:
 	content.add_child(adventure_map)
 
 # Réagit à la sélection d'une étape.
-func _on_adventure_stage_selected(stage_id: String,enemy_data: Dictionary) -> void:
+func _on_adventure_stage_selected(stage_id: String, enemy_data: Dictionary) -> void:
+	current_stage_id = stage_id
 
 	_clear_content()
 	_set_adventure_content_full_width(true)
@@ -429,7 +431,7 @@ func _on_team_confirmed(enemy_data: Dictionary, selected_instance_ids: Array) ->
 	deployment.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	deployment.return_to_adventure_requested.connect(_show_adventure)
 	
-	deployment.configure(enemy_data, selected_instance_ids)
+	deployment.configure(enemy_data, selected_instance_ids, current_stage_id)
 
 # Génère la vue "Mini-jeux" contenant la liste de tous les mini-jeux
 func _show_games() -> void:

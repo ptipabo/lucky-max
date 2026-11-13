@@ -52,7 +52,7 @@ var points: int = 0
 var gems: int = 0
 var collection: Array = []
 var next_instance_id: int = 1
-
+var unlocked_stage_ids: Array[String] = ["stage_01"]
 
 func _ready() -> void:
 	ui_font = _load_font("res://assets/fonts/HWYGNRRW.ttf")
@@ -401,6 +401,7 @@ func _save_game() -> void:
 		"gems": gems,
 		"collection": collection,
 		"next_instance_id": next_instance_id,
+		"unlocked_stage_ids": unlocked_stage_ids,
 		"recharge_ready_at": recharge_ready_at
 	}
 
@@ -468,6 +469,24 @@ func load_game() -> void:
 	var loaded_collection: Variant = data.get("collection", [])
 	var loaded_next_id: Variant = data.get("next_instance_id", 1)
 	var loaded_recharge: Variant = data.get("recharge_ready_at", 0)
+	var loaded_unlocked_stages: Variant = data.get("unlocked_stage_ids", ["stage_01"])
+
+	if typeof(loaded_unlocked_stages) != TYPE_ARRAY:
+		push_error("La liste des stages débloqués est invalide.")
+		return
+
+	var validated_unlocked_stages: Array[String] = []
+
+	for stage_id in loaded_unlocked_stages:
+		if typeof(stage_id) != TYPE_STRING or stage_id.is_empty():
+			push_error("Un identifiant de stage sauvegardé est invalide.")
+			return
+
+		if not validated_unlocked_stages.has(stage_id):
+			validated_unlocked_stages.append(stage_id)
+
+	if not validated_unlocked_stages.has("stage_01"):
+		validated_unlocked_stages.append("stage_01")
 
 	if typeof(loaded_recharge) == TYPE_FLOAT:
 		if (not is_finite(loaded_recharge) or loaded_recharge != floor(loaded_recharge)):
@@ -595,6 +614,7 @@ func load_game() -> void:
 	gems = loaded_gems
 	collection = loaded_collection.duplicate(true)
 	next_instance_id = loaded_next_id
+	unlocked_stage_ids = validated_unlocked_stages
 	recharge_ready_at = loaded_recharge
 
 	# Garantit que les prochains identifiants restent uniques.
@@ -820,3 +840,17 @@ func _draw_random_character_id() -> String:
 		return ""
 
 	return candidates[randi_range(0, candidates.size() - 1)]
+
+func unlock_next_stage(current_stage_id: String) -> void:
+	var current_index := -1
+
+	for i in range(unlocked_stage_ids.size()):
+		if unlocked_stage_ids[i] == current_stage_id:
+			current_index = i
+			break
+
+	var next_stage_id := "stage_%02d" % (int(current_stage_id.trim_prefix("stage_")) + 1)
+
+	if not unlocked_stage_ids.has(next_stage_id):
+		unlocked_stage_ids.append(next_stage_id)
+		_save_game()

@@ -26,7 +26,7 @@
 		"description": "Un protecteur des anciennes ruines qui veille sur les vestiges de son peuple.",
 		"dialogue_lines": ["Étranger, tu avances sur une terre sacrée. Prouve que tes intentions sont dignes de franchir ces portes."],
 		"team_id": "enemy_team_02",
-		"team": ["cat_mage", "frog_king", "panda_ninja"],
+		"team": ["axolotl_star", "dragon_candy", "funny_ghost"],
 		"reward": 20
 	},
 	{

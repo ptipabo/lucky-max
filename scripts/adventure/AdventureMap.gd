@@ -261,7 +261,7 @@ func _layout_stages() -> void:
 
 func _create_stage_button(index: int,position_on_map: Vector2) -> void:
 	var stage: Dictionary = stages_list[index]
-	var is_unlocked: bool = stage["unlocked"]
+	var is_unlocked: bool = GameManager.unlocked_stage_ids.has(str(stage.get("id", "")))
 	
 	var button := Button.new()
 	button.custom_minimum_size = NODE_SIZE

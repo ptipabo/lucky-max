@@ -1,5 +1,7 @@
 extends Control
 
+var battle_techniques: RefCounted
+
 signal starting_player_decided(player_starts: bool)
 signal return_to_adventure_requested
 
@@ -63,6 +65,7 @@ var technique_buttons: Array[Button] = []
 var cancel_action_button: Button
 var combat_message_label: Label
 var combat_message_timer: Timer
+var current_stage_id: String = ""
 
 # Positions des figurines déjà placées.
 # Clé : instance_id / Valeur : Vector2i(ligne, colonne)
@@ -79,6 +82,8 @@ var is_dragging_figure: bool = false
 var drag_origin_was_placed: bool = false
 
 func _ready() -> void:
+	battle_techniques = preload("res://scripts/battle/BattleTechniques.gd").new()
+	battle_techniques.setup(self)
 	_build_interface()
 
 func _build_interface() -> void:
@@ -352,7 +357,8 @@ func _create_player_figure_slots() -> void:
 		
 		slot.gui_input.connect(_on_figure_slot_input.bind(i))
 
-func configure(opponent: Dictionary, instance_ids: Array) -> void:
+func configure(opponent: Dictionary, instance_ids: Array, stage_id: String) -> void:
+	current_stage_id = stage_id
 	enemy_data = opponent.duplicate(true)
 	enemy_id = str(enemy_data.get("id", ""))
 	enemy_strategy = str(enemy_data.get("strategy", "balanced"))
@@ -1831,8 +1837,11 @@ func _finish_battle(is_victory: bool) -> void:
 	if battle_result_shown:
 		return
 	battle_result_shown = true
+	if is_victory and not current_stage_id.is_empty():
+		GameManager.unlock_next_stage(current_stage_id)
+	
 	current_phase = BattlePhase.FINISHED
-	turn_status_label.text = "Victoire !" if is_victory else "Défaite..."
+	#turn_status_label.text = "Victoire !" if is_victory else "Défaite..."
 	_update_combat_ui()
 
 	var result_detail := "Aucune gemme gagnée."
