@@ -90,14 +90,17 @@ func _build_interface() -> void:
 
 		# Contenu vertical de la carte
 		var card_content := VBoxContainer.new()
+		card_content.name = "CardContent"
 		card_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		card_content.offset_top = 22
 		card_content.add_theme_constant_override("separation", 3)
 		card_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(card_content)
 
 		# Image du personnage
 		var character_image := TextureRect.new()
-		character_image.custom_minimum_size = Vector2(0, 76)
+		character_image.name = "CharacterImage"
+		character_image.custom_minimum_size = Vector2(0, 110)
 		character_image.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		character_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		character_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -113,24 +116,24 @@ func _build_interface() -> void:
 		
 		card_content.add_child(character_image)
 
-		# Nom du personnage
-		var name_label := Label.new()
-		name_label.text = str(character.get("name", "Inconnu"))
-		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		name_label.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TITLE)
-		name_label.add_theme_color_override("font_color", GameManager.TEXT_COLOR)
-		name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		card_content.add_child(name_label)
-
-		# Rareté
-		var rarity_label := Label.new()
-		rarity_label.text = "Rareté : " + GameManager._get_rarity_label(character.get("rarity", 0))
-		rarity_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		rarity_label.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TEXT)
-		rarity_label.add_theme_color_override("font_color", Color("#F2D58B"))
-		rarity_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		card_content.add_child(rarity_label)
+		## Nom du personnage
+		#var name_label := Label.new()
+		#name_label.text = str(character.get("name", "Inconnu"))
+		#name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		#name_label.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TITLE)
+		#name_label.add_theme_color_override("font_color", GameManager.TEXT_COLOR)
+		#name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		#name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		#card_content.add_child(name_label)
+#
+		## Rareté
+		#var rarity_label := Label.new()
+		#rarity_label.text = "Rareté : " + GameManager._get_rarity_label(character.get("rarity", 0))
+		#rarity_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		#rarity_label.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TEXT)
+		#rarity_label.add_theme_color_override("font_color", Color("#F2D58B"))
+		#rarity_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		#card_content.add_child(rarity_label)
 		
 		card.pressed.connect(
 			_on_card_pressed.bind(figurine)

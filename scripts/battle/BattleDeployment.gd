@@ -81,7 +81,6 @@ var drag_origin_was_placed: bool = false
 func _ready() -> void:
 	_build_interface()
 
-
 func _build_interface() -> void:
 	# Fond général.
 	var background := ColorRect.new()

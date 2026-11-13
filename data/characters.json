@@ -13,10 +13,10 @@
 		"spirit": 8,
 		"attack": 5,
 		"defense": 2,
-		"escape": 2,
+		"escape": 1,
 		"chance": 3,
 		"moves": 2,
-		"techniques": ["fire","heal","extra_move"]
+		"techniques": ["fire","ice","heal"]
 	  },
 	  "class": "magician"
 	},
@@ -35,7 +35,7 @@
 		"escape": 2,
 		"chance": 1,
 		"moves": 3,
-		"techniques": ["extra_move","fire"]
+		"techniques": ["fire","knight_shield"]
 	  },
 	  "class": "knight"
 	},
@@ -50,11 +50,11 @@
 		"magic": 3,
 		"spirit": 4,
 		"attack": 8,
-		"defense": 3,
+		"defense": 2,
 		"escape": 2,
 		"chance": 1,
-		"moves": 3,
-		"techniques": ["extra_move"]
+		"moves": 4,
+		"techniques": []
 	  },
 	  "class": "warrior"
 	},
@@ -65,15 +65,15 @@
 	  "image": "axolotl_star.png",
 	  "sell_value": 5,
 	  "stats": {
-		"lifepoints": 27,
-		"magic": 20,
-		"spirit": 4,
-		"attack": 6,
+		"lifepoints": 22,
+		"magic": 12,
+		"spirit": 2,
+		"attack": 2,
 		"defense": 4,
 		"escape": 2,
-		"chance": 1,
-		"moves": 2,
-		"techniques": ["fire","heal","extra_move"]
+		"chance": 2,
+		"moves": 3,
+		"techniques": ["ice","fire","thunder"]
 	  },
 	  "class": "creature"
 	},
@@ -84,15 +84,15 @@
 	  "image": "dragon_candy.png",
 	  "sell_value": 5,
 	  "stats": {
-		"lifepoints": 27,
-		"magic": 20,
-		"spirit": 4,
-		"attack": 6,
-		"defense": 4,
-		"escape": 2,
+		"lifepoints": 40,
+		"magic": 3,
+		"spirit": 2,
+		"attack": 8,
+		"defense": 7,
+		"escape": 0,
 		"chance": 1,
 		"moves": 1,
-		"techniques": ["fire","heal","extra_move"]
+		"techniques": ["fire"]
 	  },
 	  "class": "creature"
 	},
@@ -103,13 +103,13 @@
 	  "image": "funny_ghost.png",
 	  "sell_value": 5,
 	  "stats": {
-		"lifepoints": 27,
-		"magic": 20,
-		"spirit": 4,
-		"attack": 6,
-		"defense": 4,
+		"lifepoints": 15,
+		"magic": 8,
+		"spirit": 6,
+		"attack": 2,
+		"defense": 99,
 		"escape": 2,
-		"chance": 1,
+		"chance": 3,
 		"moves": 2,
 		"techniques": ["ignore_walls","heal"]
 	  },
@@ -122,15 +122,15 @@
 	  "image": "unicorn_cloud.png",
 	  "sell_value": 8,
 	  "stats": {
-		"lifepoints": 27,
-		"magic": 20,
-		"spirit": 4,
+		"lifepoints": 28,
+		"magic": 14,
+		"spirit": 9,
 		"attack": 6,
-		"defense": 4,
-		"escape": 2,
-		"chance": 1,
+		"defense": 2,
+		"escape": 3,
+		"chance": 2,
 		"moves": 2,
-		"techniques": ["fire","heal","extra_move"]
+		"techniques": ["ice","wind","heal"]
 	  },
 	  "class": "creature"
 	},
@@ -142,14 +142,14 @@
 	  "sell_value": 12,
 	  "stats": {
 		"lifepoints": 27,
-		"magic": 20,
-		"spirit": 4,
-		"attack": 6,
-		"defense": 4,
-		"escape": 2,
-		"chance": 1,
-		"moves": 2,
-		"techniques": ["fire","heal","extra_move"]
+		"magic": 10,
+		"spirit": 3,
+		"attack": 7,
+		"defense": 5,
+		"escape": 1,
+		"chance": 2,
+		"moves": 3,
+		"techniques": ["fire","wind","resurrection"]
 	  },
 	  "class": "creature"
 	},
@@ -160,15 +160,15 @@
 	  "image": "ninja_haku.png",
 	  "sell_value": 12,
 	  "stats": {
-		"lifepoints": 27,
-		"magic": 20,
-		"spirit": 4,
-		"attack": 6,
-		"defense": 4,
+		"lifepoints": 38,
+		"magic": 3,
+		"spirit": 8,
+		"attack": 7,
+		"defense": 6,
 		"escape": 2,
 		"chance": 1,
-		"moves": 2,
-		"techniques": ["fire","heal","extra_move"]
+		"moves": 3,
+		"techniques": ["fire"]
 	  },
 	  "class": "warrior"
 	},
@@ -179,15 +179,15 @@
 	  "image": "fatty_killer.png",
 	  "sell_value": 12,
 	  "stats": {
-		"lifepoints": 27,
-		"magic": 20,
-		"spirit": 4,
-		"attack": 6,
-		"defense": 4,
-		"escape": 2,
+		"lifepoints": 42,
+		"magic": 2,
+		"spirit": 9,
+		"attack": 11,
+		"defense": 9,
+		"escape": 1,
 		"chance": 1,
-		"moves": 2,
-		"techniques": ["fire","heal","extra_move"]
+		"moves": 1,
+		"techniques": []
 	  },
 	  "class": "warrior"
 	},
@@ -198,15 +198,15 @@
 	  "image": "cosmic_leviathan.png",
 	  "sell_value": 25,
 	  "stats": {
-		"lifepoints": 27,
-		"magic": 20,
-		"spirit": 4,
-		"attack": 6,
-		"defense": 4,
-		"escape": 2,
-		"chance": 1,
+		"lifepoints": 40,
+		"magic": 13,
+		"spirit": 10,
+		"attack": 2,
+		"defense": 3,
+		"escape": 3,
+		"chance": 2,
 		"moves": 2,
-		"techniques": ["fire","heal","extra_move"]
+		"techniques": ["wind","fire","ice","thunder","heal"]
 	  },
 	  "class": "magician"
 	},
@@ -217,15 +217,15 @@
 	  "image": "diamond_slime.png",
 	  "sell_value": 25,
 	  "stats": {
-		"lifepoints": 27,
-		"magic": 20,
-		"spirit": 4,
-		"attack": 6,
-		"defense": 4,
-		"escape": 2,
-		"chance": 1,
+		"lifepoints": 17,
+		"magic": 10,
+		"spirit": 2,
+		"attack": 2,
+		"defense": 15,
+		"escape": 1,
+		"chance": 3,
 		"moves": 1,
-		"techniques": ["fire","heal","extra_move"]
+		"techniques": ["ice","heal"]
 	  },
 	  "class": "creature"
 	},
@@ -236,15 +236,15 @@
 	  "image": "skinny_killer.png",
 	  "sell_value": 25,
 	  "stats": {
-		"lifepoints": 27,
-		"magic": 20,
-		"spirit": 4,
-		"attack": 6,
+		"lifepoints": 37,
+		"magic": 11,
+		"spirit": 9,
+		"attack": 7,
 		"defense": 4,
 		"escape": 2,
 		"chance": 1,
-		"moves": 2,
-		"techniques": ["fire","heal","extra_move"]
+		"moves": 3,
+		"techniques": ["knight_shield","wind","thunder"]
 	  },
 	  "class": "knight"
 	},
@@ -256,14 +256,14 @@
 	  "sell_value": 40,
 	  "stats": {
 		"lifepoints": 45,
-		"magic": 20,
-		"spirit": 4,
-		"attack": 6,
-		"defense": 4,
-		"escape": 2,
-		"chance": 1,
+		"magic": 12,
+		"spirit": 12,
+		"attack": 8,
+		"defense": 8,
+		"escape": 1,
+		"chance": 0,
 		"moves": 3,
-		"techniques": ["fire","heal","extra_move"]
+		"techniques": ["fire","ice","thunder","heal","resurrection"]
 	  },
 	  "class": "knight"
 	},
@@ -275,14 +275,14 @@
 	  "sell_value": 40,
 	  "stats": {
 		"lifepoints": 42,
-		"magic": 20,
-		"spirit": 4,
+		"magic": 15,
+		"spirit": 11,
 		"attack": 6,
-		"defense": 4,
-		"escape": 2,
-		"chance": 1,
+		"defense": 8,
+		"escape": 1,
+		"chance": 0,
 		"moves": 4,
-		"techniques": ["fire","heal","extra_move"]
+		"techniques": ["fire","ice","thunder","wind","heal"]
 	  },
 	  "class": "magician"
 	},
@@ -294,14 +294,52 @@
 	  "sell_value": 40,
 	  "stats": {
 		"lifepoints": 47,
-		"magic": 20,
-		"spirit": 4,
-		"attack": 9,
+		"magic": 7,
+		"spirit": 7,
+		"attack": 14,
+		"defense": 11,
+		"escape": 2,
+		"chance": 0,
+		"moves": 3,
+		"techniques": ["fire","knight_shield"]
+	  },
+	  "class": "warrior"
+	},
+	{"id": "tempus",
+	  "name": "Tempus",
+	  "rarity": 4,
+	  "description": "Tempus est le dernier survivant de son peuple, les chronomanciens. Il cherche à retrouver la mémoire ce qui lui est arrivé après que son peuple ait disparu.",
+	  "image": "tempus.png",
+	  "sell_value": 12,
+	  "stats": {
+		"lifepoints": 35,
+		"magic": 12,
+		"spirit": 5,
+		"attack": 5,
 		"defense": 4,
 		"escape": 2,
+		"chance": 3,
+		"moves": 2,
+		"techniques": ["timeskip","heal","teleportation"]
+	  },
+	  "class": "magician"
+	},
+	{"id": "zan",
+	  "name": "Zan",
+	  "rarity": 3,
+	  "description": "Zan est un jeune garçon rebel au caractère bien trempé. Né dans un village de pêcheurs, il est élevé seul par son père suite à la disparition tragique de sa mère étant plus jeune.",
+	  "image": "zan.png",
+	  "sell_value": 8,
+	  "stats": {
+		"lifepoints": 27,
+		"magic": 6,
+		"spirit": 6,
+		"attack": 7,
+		"defense": 4,
+		"escape": 3,
 		"chance": 1,
 		"moves": 3,
-		"techniques": ["fire","heal","extra_move"]
+		"techniques": []
 	  },
 	  "class": "warrior"
 	}
