@@ -54,7 +54,7 @@
 		"escape": 2,
 		"chance": 1,
 		"moves": 4,
-		"techniques": []
+		"techniques": ["extra_move"]
 	  },
 	  "class": "warrior"
 	},

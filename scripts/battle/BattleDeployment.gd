@@ -34,6 +34,9 @@ var selected_figures: Array = []
 var enemy_figures: Array[Dictionary] = []
 var figures_layer: Control
 var enemy_figure_visuals: Array[TextureRect] = []
+var enemy_figure_positions: Dictionary = {}
+var highlighted_enemy_ids: Array[int] = []
+var target_highlight_material: ShaderMaterial
 var combat_button: Button
 var combat_button_spacer: Control
 var starting_player_dialog: AcceptDialog
@@ -42,7 +45,6 @@ var current_phase: int = BattlePhase.DEPLOYMENT
 var battle_result_shown: bool = false
 var turn_status_label: Label
 var unit_health: Dictionary = {}
-var enemy_figure_positions: Dictionary = {}
 var player_move_points_used: Dictionary = {}
 var reachable_cell_costs: Dictionary = {}
 var obstacle_positions: Dictionary = {}
@@ -84,6 +86,10 @@ var drag_origin_was_placed: bool = false
 func _ready() -> void:
 	battle_techniques = preload("res://scripts/battle/BattleTechniques.gd").new()
 	battle_techniques.setup(self)
+	target_highlight_material = ShaderMaterial.new()
+	target_highlight_material.shader = preload(
+		"res://shaders/target_highlight.gdshader"
+	)
 	_build_interface()
 
 func _build_interface() -> void:
@@ -976,7 +982,7 @@ func _get_reachable_cells(
 				or _is_position_occupied(
 					next_cell,
 					actor_id,
-					_can_pass_obstacles(actor_id)
+					battle_techniques.can_pass_obstacles(actor_id)
 				)
 			):
 				continue
@@ -987,20 +993,6 @@ func _get_reachable_cells(
 			pending.append(next_cell)
 
 	return reachable
-
-func _get_move_points(figure: Dictionary) -> int:
-	if _has_status_effect(int(figure.get("instance_id", -1)), "freeze"):
-		return 0
-	var stats: Dictionary = figure.get("data", {}).get("stats", {})
-	var move_points := int(stats.get("moves", 1))
-	for technique_id in stats.get("techniques", []):
-		var technique: Dictionary = GameManager.techniques_catalog.get(
-			str(technique_id),
-			{}
-		)
-		if technique.get("type", "") == "move":
-			move_points += int(technique.get("value", 0))
-	return maxi(0, move_points)
 
 func _is_position_occupied(
 	position: Vector2i,
@@ -1024,11 +1016,6 @@ func _is_position_occupied(
 
 	return false
 
-func _can_pass_obstacles(instance_id: int) -> bool:
-	var figure := _get_unit_figure(instance_id)
-	var stats: Dictionary = figure.get("data", {}).get("stats", {})
-	return stats.get("techniques", []).has("ignore_walls")
-
 func _highlight_movement_cells() -> void:
 	for position in reachable_cells:
 		var cell_index: int = position.x * BOARD_SIZE + position.y
@@ -1042,6 +1029,12 @@ func _clear_movement_highlights() -> void:
 	reachable_cell_costs.clear()
 	for cell in board_grid.get_children():
 		cell.add_theme_stylebox_override("panel", cell.get_meta("base_style"))
+	
+	# Retirer le halo des ennemis
+	for enemy_id in highlighted_enemy_ids:
+		_set_enemy_highlight(enemy_id, false)
+
+	highlighted_enemy_ids.clear()
 
 func _on_placed_figure_input(event: InputEvent, instance_id: int) -> void:
 	if current_phase == BattlePhase.PLAYER_MOVEMENT:
@@ -1084,7 +1077,7 @@ func _on_placed_figure_input(event: InputEvent, instance_id: int) -> void:
 			start,
 			maxi(
 				0,
-				_get_move_points(figure)
+				battle_techniques.get_move_points(figure)
 				- int(player_move_points_used.get(instance_id, 0))
 			),
 			instance_id
@@ -1092,7 +1085,7 @@ func _on_placed_figure_input(event: InputEvent, instance_id: int) -> void:
 		_highlight_movement_cells()
 		turn_status_label.text = "%d PM restants" % maxi(
 			0,
-			_get_move_points(figure)
+			battle_techniques.get_move_points(figure)
 			- int(player_move_points_used.get(instance_id, 0))
 		)
 
@@ -1176,10 +1169,6 @@ func _on_combat_button_pressed() -> void:
 	)
 	starting_player_dialog.popup_centered(Vector2i(320, 160))
 	starting_player_decided.emit(player_starts)
-
-	print("Déploiement confirmé !")
-	print("Positions des figurines : ", player_figure_positions)
-	print("Le joueur commence : ", player_starts)
 
 func _begin_combat() -> void:
 	if current_phase != BattlePhase.DEPLOYMENT:
@@ -1280,7 +1269,7 @@ func _create_combat_controls() -> void:
 		technique_button.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_BUTTON)
 		technique_button.set_meta("technique_id", "")
 		technique_button.pressed.connect(
-			_on_technique_button_pressed.bind(index)
+			battle_techniques.on_technique_button_pressed.bind(index)
 		)
 		_apply_action_button_style(technique_button)
 		technique_row.add_child(technique_button)
@@ -1367,6 +1356,7 @@ func _on_phase_button_pressed() -> void:
 		selected_actor_id = -1
 		pending_action = ""
 	elif current_phase == BattlePhase.PLAYER_ACTIONS:
+		_clear_movement_highlights()
 		for instance_id in player_figure_positions:
 			if not bool(player_acted.get(instance_id, false)):
 				defending_units[instance_id] = true
@@ -1391,66 +1381,34 @@ func _select_player_actor(instance_id: int) -> void:
 	selected_actor_label.text = str(
 		figure.get("data", {}).get("name", "Figurine")
 	)
-	_populate_technique_buttons(instance_id)
+	battle_techniques.populate_technique_buttons(instance_id)
 	_update_combat_ui()
-
-func _populate_technique_buttons(instance_id: int) -> void:
-	for button in technique_buttons:
-		button.set_meta("technique_id", "")
-		button.text = ""
-		button.tooltip_text = ""
-		button.disabled = true
-
-	var figure := _get_player_figure(instance_id)
-	var stats: Dictionary = figure.get("data", {}).get("stats", {})
-	var slot_index := 0
-	for technique_id in stats.get("techniques", []):
-		var technique: Dictionary = GameManager.techniques_catalog.get(
-			str(technique_id),
-			{}
-		)
-		if technique.get("type", "") != "action":
-			continue
-		if slot_index >= technique_buttons.size():
-			break
-		var button: Button = technique_buttons[slot_index]
-		button.set_meta("technique_id", str(technique_id))
-		button.text = _get_technique_emoji(str(technique_id))
-		button.tooltip_text = str(technique.get("name", technique_id))
-		GameManager.apply_button_skin(button)
-		button.disabled = false
-		slot_index += 1
-
-func _get_technique_emoji(technique_id: String) -> String:
-	match technique_id:
-		"fire":
-			return "🔥"
-		"heal":
-			return "💚"
-		"ice":
-			return "❄"
-		"extra_move":
-			return "👟"
-		_:
-			return "✨"
 
 func _on_attack_pressed() -> void:
 	if selected_actor_id <= 0:
 		return
+	
+	_clear_movement_highlights()
 	pending_action = "attack"
-	_update_combat_ui()
-
-func _on_technique_button_pressed(index: int) -> void:
-	if index < 0 or index >= technique_buttons.size() or selected_actor_id <= 0:
-		return
-	pending_action = str(technique_buttons[index].get_meta("technique_id", ""))
-	if pending_action.is_empty():
-		return
+	_highlight_targetable_cells(pending_action)
 	_update_combat_ui()
 
 func _on_cancel_action_pressed() -> void:
 	pending_action = ""
+	_clear_movement_highlights()
 	_update_combat_ui()
+
+# Génère un contour lumineux sur les figurines ciblables par une attaque ou une technique
+func _set_enemy_highlight(instance_id: int, enabled: bool) -> void:
+	var sprite: TextureRect = figure_visuals.get(instance_id) as TextureRect
+
+	if sprite == null or not is_instance_valid(sprite):
+		return
+
+	if enabled:
+		sprite.material = target_highlight_material
+	else:
+		sprite.material = null
 
 func _on_enemy_figure_input(event: InputEvent, instance_id: int) -> void:
 	if current_phase != BattlePhase.PLAYER_ACTIONS or pending_action.is_empty():
@@ -1530,6 +1488,7 @@ func _resolve_character_action(target_id: int) -> void:
 		is_offensive_action = int(selected_technique.get("value", 0)) < 0
 	if (
 		is_offensive_action
+		and pending_action != "thunder"
 		and not _has_clear_attack_line(
 			actor_position,
 			target_position,
@@ -1542,6 +1501,7 @@ func _resolve_character_action(target_id: int) -> void:
 	if pending_action == "attack":
 		if target_id > 0:
 			return
+
 		_apply_damage(
 			target_id,
 			int(actor_stats.get("attack", 0)),
@@ -1551,29 +1511,23 @@ func _resolve_character_action(target_id: int) -> void:
 			str(actor.get("data", {}).get("name", "Figurine alliée"))
 		)
 	else:
-		var technique: Dictionary = GameManager.techniques_catalog.get(
-			pending_action,
-			{}
+		var actor_name := str(
+			actor.get("data", {}).get("name", "Figurine alliée")
 		)
-		var value := int(technique.get("value", 0))
-		if value < 0 and target_id < 0:
-			var hit := _apply_damage(
-				target_id,
-				abs(value),
-				"magic",
-				int(actor_stats.get("magic", 0)),
-				true,
-				str(actor.get("data", {}).get("name", "Figurine alliée"))
-			)
-			if hit:
-				_try_apply_side_effect(target_id, technique)
-		elif value > 0 and target_id > 0:
-			_apply_healing(target_id, value)
-		else:
+
+		var resolved: bool = battle_techniques.resolve_technique(
+			target_id,
+			actor_stats,
+			actor_name
+		)
+
+		if not resolved:
 			return
+
 	_complete_player_action()
 
 func _complete_player_action() -> void:
+	_clear_movement_highlights()
 	player_acted[selected_actor_id] = true
 	selected_actor_id = -1
 	pending_action = ""
@@ -1583,6 +1537,8 @@ func _complete_player_action() -> void:
 func _grid_distance(first: Vector2i, second: Vector2i) -> int:
 	return absi(first.x - second.x) + absi(first.y - second.y)
 
+# Permet de vérifier que le personnage peut atteindre sa cible en ligne droite
+# ou en diagonale, sans figurine intermédiaire
 func _has_clear_attack_line(
 	origin: Vector2i,
 	target: Vector2i,
@@ -1608,6 +1564,7 @@ func _has_clear_attack_line(
 		current += direction
 	return true
 
+# Permet de récupèrer la portée d'eune attaque ou d'une technique
 func _get_action_range(action_id: String) -> int:
 	if action_id == "attack":
 		return ATTACK_RANGE
@@ -1626,6 +1583,68 @@ func _get_unit_figure(instance_id: int) -> Dictionary:
 		if int(figure.get("instance_id", 0)) == instance_id:
 			return figure
 	return {}
+
+func _get_targetable_enemy_cells(
+	actor_id: int,
+	action_id: String
+) -> Array[Vector2i]:
+	var targetable: Array[Vector2i] = []
+	var origin: Vector2i = _get_unit_position(actor_id)
+
+	if origin.x < 0:
+		return targetable
+
+	var action_range: int = _get_action_range(action_id)
+
+	# Foudre touche tous les ennemis dans un rayon de 2 cases,
+	# sans tenir compte des obstacles ni de la ligne de vue.
+	if action_id == "thunder":
+		for enemy_id in enemy_figure_positions:
+			var enemy_position: Vector2i = _get_unit_position(int(enemy_id))
+
+			if enemy_position.x < 0:
+				continue
+
+			var distance: int = _grid_distance(origin, enemy_position)
+
+			if distance <= action_range:
+				targetable.append(enemy_position)
+
+		return targetable
+
+	for enemy_id in enemy_figure_positions:
+		var enemy_position: Vector2i = _get_unit_position(int(enemy_id))
+
+		if enemy_position.x < 0:
+			continue
+
+		var distance: int = _grid_distance(origin, enemy_position)
+
+		if distance > action_range:
+			continue
+
+		if not _has_clear_attack_line(origin, enemy_position, actor_id):
+			continue
+
+		targetable.append(enemy_position)
+
+	return targetable
+
+func _highlight_targetable_cells(action_id: String) -> void:
+	var targetable_cells: Array[Vector2i] = _get_targetable_enemy_cells(
+		selected_actor_id,
+		action_id
+	)
+
+	highlighted_enemy_ids.clear()
+
+	for enemy_id in enemy_figure_positions:
+		var id := int(enemy_id)
+		var enemy_position: Vector2i = _get_unit_position(id)
+
+		if targetable_cells.has(enemy_position):
+			_set_enemy_highlight(id, true)
+			highlighted_enemy_ids.append(id)
 
 func _apply_damage(
 	instance_id: int,
@@ -1732,39 +1751,6 @@ func _apply_healing(instance_id: int, amount: int) -> void:
 	else:
 		status_effects[instance_id] = effects
 
-func _try_apply_side_effect(instance_id: int, technique: Dictionary) -> void:
-	if not unit_health.has(instance_id):
-		return
-	var effect_id := str(technique.get("side_effect", ""))
-	var chance := clampf(float(technique.get("side_effect_chance", 0.0)), 0.0, 1.0)
-	if effect_id.is_empty() or randf() >= chance:
-		return
-
-	var effects: Array = status_effects.get(instance_id, [])
-	var remaining_turns := int(technique.get("side_effect_duration", -1))
-	var power := int(technique.get("side_effect_power", 0))
-	for effect in effects:
-		if str(effect.get("id", "")) != effect_id:
-			continue
-		if int(effect.get("remaining_turns", -1)) >= 0:
-			if remaining_turns < 0:
-				effect["remaining_turns"] = -1
-			else:
-				effect["remaining_turns"] = maxi(
-					int(effect["remaining_turns"]),
-					remaining_turns
-				)
-		effect["power"] = maxi(int(effect.get("power", 0)), power)
-		status_effects[instance_id] = effects
-		return
-
-	effects.append({
-		"id": effect_id,
-		"remaining_turns": remaining_turns,
-		"power": power
-	})
-	status_effects[instance_id] = effects
-
 func _has_status_effect(instance_id: int, effect_id: String) -> bool:
 	for effect in status_effects.get(instance_id, []):
 		if str(effect.get("id", "")) == effect_id:
@@ -1803,6 +1789,7 @@ func _tick_side_effects(player_side: bool) -> void:
 		else:
 			status_effects[instance_key] = remaining_effects
 
+# Met à jour la barre de vie d'un personnage
 func _update_unit_health_display(instance_id: int) -> void:
 	if not figure_visuals.has(instance_id):
 		return
@@ -1958,7 +1945,7 @@ func _get_path_distance_map(
 				or _is_position_occupied(
 					next_cell,
 					ignored_instance_id,
-					_can_pass_obstacles(ignored_instance_id)
+					battle_techniques.can_pass_obstacles(ignored_instance_id)
 				)
 			):
 				continue
@@ -1998,7 +1985,7 @@ func _get_shortest_path(
 				or _is_position_occupied(
 					next_cell,
 					ignored_instance_id,
-					_can_pass_obstacles(ignored_instance_id)
+					battle_techniques.can_pass_obstacles(ignored_instance_id)
 				)
 			):
 				continue
@@ -2034,7 +2021,7 @@ func _run_enemy_figure_turn(instance_id: int) -> void:
 
 	for position in _get_reachable_cells(
 		actor_position,
-		_get_move_points(figure),
+		battle_techniques.get_move_points(figure),
 		instance_id
 	):
 		var distance := int(path_distances.get(position, NO_PATH_DISTANCE))
@@ -2071,7 +2058,7 @@ func _run_enemy_figure_turn(instance_id: int) -> void:
 					enemy_name
 				)
 				if hit:
-					_try_apply_side_effect(target_id, action["technique"])
+					battle_techniques.try_apply_side_effect(target_id, action["technique"])
 			else:
 				_apply_damage(
 					target_id,

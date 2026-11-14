@@ -39,7 +39,7 @@ const RECHARGE_DELAY_SECONDS: int = 15#300
 const FONT_SIZE_TITLE := 36
 const FONT_SIZE_SUBTITLE := 34
 const FONT_SIZE_BUTTON := 32
-const FONT_SIZE_TEXT := 30
+const FONT_SIZE_TEXT := 20
 
 var save_load_valid: bool = true
 var recharge_ready_at: int = 0

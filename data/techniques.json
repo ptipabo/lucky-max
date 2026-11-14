@@ -62,7 +62,7 @@
 		"type": "action",
 		"description": "Electrocute et fait perdre quelques PV à la cible.",
 		"icon": "thunder.png",
-		"value": -10,
+		"value": -7,
 		"range": 2,
 		"side_effect": "stun",
 		"side_effect_chance": 0.3,
