@@ -14,7 +14,7 @@ const ATTACK_RANGE := 1
 const NO_PATH_DISTANCE := 100000
 const OBSTACLE_COUNT := 5
 const ENEMY_STEP_DURATION := 0.22
-const TECHNIQUE_SLOT_COUNT := 3
+const TECHNIQUE_SLOT_COUNT := 8
 
 var main_layout: VBoxContainer
 var board_grid: GridContainer
@@ -1250,27 +1250,24 @@ func _create_combat_controls() -> void:
 	selected_actor_label.add_theme_color_override("font_color", Color("#F2D58B"))
 	action_controls.add_child(selected_actor_label)
 
-	attack_button = Button.new()
-	attack_button.text = "⚔ Attaque"
-	attack_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	attack_button.pressed.connect(_on_attack_pressed)
-	_apply_action_button_style(attack_button)
-	action_controls.add_child(attack_button)
-
 	technique_row = HBoxContainer.new()
 	technique_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	technique_row.add_theme_constant_override("separation", 6)
+	technique_row.add_theme_constant_override("separation", 3)
 	action_controls.add_child(technique_row)
+
 	technique_buttons.clear()
+
 	for index in range(TECHNIQUE_SLOT_COUNT):
 		var technique_button := Button.new()
-		technique_button.custom_minimum_size = Vector2(48, 48)
+		technique_button.custom_minimum_size = Vector2(40, 44)
 		technique_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		technique_button.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_BUTTON)
 		technique_button.set_meta("technique_id", "")
-		technique_button.pressed.connect(
-			battle_techniques.on_technique_button_pressed.bind(index)
-		)
+		if index == 0:
+			technique_button.pressed.connect(_on_attack_pressed)
+		else:
+			technique_button.pressed.connect(
+				battle_techniques.on_technique_button_pressed.bind(index)
+			)
 		_apply_action_button_style(technique_button)
 		technique_row.add_child(technique_button)
 		technique_buttons.append(technique_button)
@@ -1327,7 +1324,6 @@ func _update_combat_ui() -> void:
 	)
 	action_controls.visible = battle_active
 	selected_actor_label.visible = can_act
-	attack_button.disabled = not can_act or not pending_action.is_empty()
 	for technique_button in technique_buttons:
 		technique_button.disabled = (
 			not can_act

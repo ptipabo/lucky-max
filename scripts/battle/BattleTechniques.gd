@@ -66,15 +66,45 @@ func try_apply_side_effect(instance_id: int, technique: Dictionary) -> void:
 # Permet de générer les boutons d'attaque spéciales de chaque personnage selon
 # les techniques qu'il possède
 func populate_technique_buttons(instance_id: int) -> void:
+	# Réinitialiser tous les emplacements
 	for button in battle.technique_buttons:
+		for child in button.get_children():
+			if child is TextureRect:
+				button.remove_child(child)
+				child.queue_free()
 		button.set_meta("technique_id", "")
 		button.text = ""
+		button.icon = null
 		button.tooltip_text = ""
 		button.disabled = true
+		button.add_theme_constant_override("icon_max_width", 32)
 
+	# Premier emplacement : attaque de base
+	if battle.technique_buttons.size() > 0:
+		var attack_button: Button = battle.technique_buttons[0]
+		attack_button.set_meta("technique_id", "attack")
+		attack_button.icon = null
+		attack_button.tooltip_text = "Attaque"
+		attack_button.disabled = false
+
+		var attack_texture: Texture2D = load(
+			"res://assets/icons/techniques/attack_icon.png"
+		)
+		if attack_texture != null:
+			var icon_rect := TextureRect.new()
+			icon_rect.texture = attack_texture
+			icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			icon_rect.custom_minimum_size = Vector2(60, 60)
+			icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			icon_rect.set_anchors_preset(Control.PRESET_CENTER)
+			icon_rect.position = Vector2(-30, -35)
+			attack_button.add_child(icon_rect)
+
+	# Récupérer les techniques du personnage
 	var figure: Dictionary = battle._get_player_figure(instance_id)
 	var stats: Dictionary = figure.get("data", {}).get("stats", {})
-	var slot_index := 0
+	var slot_index := 1
 
 	for technique_id in stats.get("techniques", []):
 		var technique: Dictionary = GameManager.techniques_catalog.get(
@@ -90,10 +120,27 @@ func populate_technique_buttons(instance_id: int) -> void:
 
 		var button: Button = battle.technique_buttons[slot_index]
 		button.set_meta("technique_id", str(technique_id))
-		button.text = get_technique_emoji(str(technique_id))
+
+		var icon_path := "res://assets/icons/techniques/" + str(
+			technique.get("icon", "")
+		)
+
+		button.icon = null
 		button.tooltip_text = str(technique.get("name", technique_id))
-		GameManager.apply_button_skin(button)
 		button.disabled = false
+
+		var icon_texture: Texture2D = load(icon_path)
+		if icon_texture != null:
+			var icon_rect := TextureRect.new()
+			icon_rect.texture = icon_texture
+			icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			icon_rect.custom_minimum_size = Vector2(60, 60)
+			icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			icon_rect.set_anchors_preset(Control.PRESET_CENTER)
+			icon_rect.position = Vector2(-30, -40)
+			button.add_child(icon_rect)
+
 		slot_index += 1
 
 # Permet de vérifier si une technique est utilisée correctement ou non par le joueur
