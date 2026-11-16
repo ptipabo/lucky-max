@@ -183,16 +183,38 @@ func resolve_technique(
 		return true
 
 	if value < 0 and target_id < 0:
+		var target_sprite := battle.figure_visuals.get(target_id) as TextureRect
+
+		var target_position := Vector2.ZERO
+		var target_size := Vector2.ZERO
+		var target_z_index := 0
+
+		if is_instance_valid(target_sprite):
+			target_position = target_sprite.position
+			target_size = target_sprite.size
+			target_z_index = target_sprite.z_index
+
 		var hit: bool = battle._apply_damage(
 			target_id,
 			abs(value),
 			"magic",
 			int(actor_stats.get("magic", 0)),
 			true,
-			actor_name
+			actor_name,
+			battle.pending_action == "fire"
 		)
 
 		if hit:
+			if battle.pending_action == "fire":
+				battle._play_technique_animation(
+					"fire",
+					target_position,
+					target_size,
+					target_z_index,
+					target_sprite,
+					not battle.unit_health.has(target_id)
+				)
+
 			try_apply_side_effect(target_id, technique)
 
 		return true

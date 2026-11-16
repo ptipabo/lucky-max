@@ -71,6 +71,7 @@ func _ready() -> void:
 	
 	# On crée le timer qui va servir à la recharge automatique des points
 	var recharge_timer := Timer.new()
+	recharge_timer.name = "RechargeTimer"
 	recharge_timer.wait_time = 1.0
 	recharge_timer.timeout.connect(_update_recharge_label)
 	add_child(recharge_timer)
@@ -91,6 +92,7 @@ func _build_interface() -> void:
 	add_child(background)
 
 	currency_limit_dialog = AcceptDialog.new()
+	currency_limit_dialog.name = "CurrencyLimitDialog"
 	currency_limit_dialog.title = "Maximum atteint"
 	currency_limit_dialog.ok_button_text = "Fermer"
 	GameManager.apply_button_skin(currency_limit_dialog.get_ok_button())
@@ -115,54 +117,36 @@ func _build_interface() -> void:
 	scene_margins.add_child(layout)
 
 	# En-tête : compteur de points.
-	var header_margin := MarginContainer.new()
-	header_margin.custom_minimum_size = Vector2(0, 64)
-	header_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header_margin.add_theme_constant_override("margin_left", 20)
-	header_margin.add_theme_constant_override("margin_right", 20)
-	layout.add_child(header_margin)
+	var main_header_margin := MarginContainer.new()
+	main_header_margin.name = "MainHeader"
+	main_header_margin.custom_minimum_size = Vector2(0, 90)
+	main_header_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	main_header_margin.add_theme_constant_override("margin_left", 20)
+	main_header_margin.add_theme_constant_override("margin_right", 20)
+	layout.add_child(main_header_margin)
 
-	var header := HBoxContainer.new()
-	header.custom_minimum_size = Vector2(0, 64)
-	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header_margin.add_child(header)
+	var main_header := HBoxContainer.new()
+	main_header.name = "MainHeaderLayout"
+	main_header.custom_minimum_size = Vector2(0, 64)
+	main_header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	main_header_margin.add_child(main_header)
 	
-	# Bloc du compteur : sa taille est indépendante du fond.
+	# Bloc du compteur de points : sa taille est indépendante du fond.
 	var points_block := Control.new()
-	points_block.custom_minimum_size = Vector2(215, 64)
+	points_block.name = "PointsCounter"
+	points_block.custom_minimum_size = Vector2(220, 64)
 	points_block.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	points_block.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	header.add_child(points_block)
-
-	var gems_background := PanelContainer.new()
-	gems_background.custom_minimum_size = Vector2(132, 48)
-	gems_background.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var gems_style_box := StyleBoxFlat.new()
-	gems_style_box.bg_color = BG_COLOR
-	gems_style_box.border_color = ACCENT_COLOR
-	gems_style_box.set_border_width_all(2)
-	gems_style_box.set_corner_radius_all(24)
-	gems_style_box.set_content_margin_all(8.0)
-	gems_background.add_theme_stylebox_override("panel", gems_style_box)
-	header.add_child(gems_background)
-
-	gems_label = Label.new()
-	gems_label.text = "💎 " + str(GameManager.gems)
-	gems_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	gems_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	gems_label.add_theme_color_override("font_color", ACCENT_COLOR)
-	gems_label.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TITLE)
-	gems_background.add_child(gems_label)
+	main_header.add_child(points_block)
 
 	# Fond fixe.
 	var points_background := PanelContainer.new()
 	points_background.name = "PointsBackground"
 	points_background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-
 	# Marges externes du fond.
-	points_background.offset_left = 35
+	points_background.offset_left = 60
 	points_background.offset_right = 0
-	points_background.offset_top = 5
+	points_background.offset_top = 15
 	points_background.offset_bottom = -10
 	
 	var points_bg_style_box := StyleBoxFlat.new()
@@ -183,7 +167,7 @@ func _build_interface() -> void:
 	
 	points_label = Label.new()
 	points_label.name = "PointsLabel"
-	points_label.text = str(points) + " points"
+	points_label.text = _add_missing_zeros(points)
 	points_label.add_theme_color_override("font_color", ACCENT_COLOR)
 	points_label.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TITLE)
 	points_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -193,6 +177,7 @@ func _build_interface() -> void:
 	
 	# Contenu indépendant du fond.
 	var points_container := HBoxContainer.new()
+	points_container.name = "PointsIconContainer"
 	points_container.position = Vector2(0, -5)
 	points_container.size = Vector2(215, 75)
 	points_container.add_theme_constant_override("separation", 8)
@@ -203,29 +188,114 @@ func _build_interface() -> void:
 	
 	# Ajout de l'icône des points
 	var points_icon := TextureRect.new()
-	points_icon.custom_minimum_size = Vector2(75, 75)
-	points_icon.size = Vector2(75, 75)
+	points_icon.name = "PointsIcon"
+	points_icon.custom_minimum_size = Vector2(100, 100)
+	points_icon.size = Vector2(100, 100)
 	points_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	points_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
 	points_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# On centre l'icône verticalement dans la ligne
 	points_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
-	var image_path := "res://assets/icons/points_icon.png"
-	var texture := load(image_path) as Texture2D
+	var points_icon_path := "res://assets/icons/points_icon.png"
+	var points_texture := load(points_icon_path) as Texture2D
 	
-	if texture != null:
-		points_icon.texture = texture
+	if points_texture != null:
+		points_icon.texture = points_texture
 	else:
-		push_warning("Image introuvable : " + image_path)
+		push_warning("Image introuvable : " + points_icon_path)
 	
 	points_container.add_child(points_icon)
 	
+	var gems_block_margin := MarginContainer.new()
+	gems_block_margin.name = "GemsCounterMargin"
+	gems_block_margin.custom_minimum_size = Vector2(0, 68)
+	gems_block_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	gems_block_margin.add_theme_constant_override("margin_left", 20)
+	gems_block_margin.add_theme_constant_override("margin_right", 20)
+	main_header.add_child(gems_block_margin)
+	
+	# Bloc du compteur de gemmes : sa taille est indépendante du fond.
+	var gems_block := Control.new()
+	gems_block.name = "GemsCounter"
+	gems_block.custom_minimum_size = Vector2(220, 64)
+	gems_block.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	gems_block.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	gems_block_margin.add_child(gems_block)
+	
+	# Fond fixe.
+	var gems_background := PanelContainer.new()
+	gems_background.name = "GemsBackground"
+	gems_background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Marges externes du fond.
+	gems_background.offset_left = 60
+	gems_background.offset_right = 0
+	gems_background.offset_top = 15
+	gems_background.offset_bottom = -10
+	
+	var gems_bg_style_box := StyleBoxFlat.new()
+	gems_bg_style_box.bg_color = BG_COLOR
+	gems_bg_style_box.set_corner_radius_all(25)
+	# Contour
+	gems_bg_style_box.border_color = ACCENT_COLOR
+	gems_bg_style_box.set_border_width_all(2)
+	# Marges internes : espace entre le texte et le fond.
+	gems_bg_style_box.content_margin_left = 45.0
+	gems_bg_style_box.content_margin_right = 18.0
+	gems_bg_style_box.content_margin_top = 10.0
+	gems_bg_style_box.content_margin_bottom = 10.0
+	
+	gems_background.add_theme_stylebox_override("panel", gems_bg_style_box)
+
+	gems_block.add_child(gems_background)
+	
+	gems_label = Label.new()
+	gems_label.name = "GemsLabel"
+	gems_label.text = _add_missing_zeros(GameManager.gems)
+	gems_label.add_theme_color_override("font_color", ACCENT_COLOR)
+	gems_label.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TITLE)
+	gems_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	gems_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	
+	gems_background.add_child(gems_label)
+	
+	# Contenu indépendant du fond.
+	var gems_container := HBoxContainer.new()
+	gems_container.name = "GemsIconContainer"
+	gems_container.position = Vector2(0, -5)
+	gems_container.size = Vector2(215, 75)
+	gems_container.add_theme_constant_override("separation", 8)
+	gems_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	# On dessine le contenu au-dessus du fond.
+	gems_block.add_child(gems_container)
+	
+	# Ajout de l'icône des points
+	var gems_icon := TextureRect.new()
+	gems_icon.name = "GemsIcon"
+	gems_icon.custom_minimum_size = Vector2(100, 100)
+	gems_icon.size = Vector2(100, 100)
+	gems_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	gems_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
+	gems_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# On centre l'icône verticalement dans la ligne
+	gems_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+
+	var gems_icon_path := "res://assets/icons/gems_icon.png"
+	var gems_texture := load(gems_icon_path) as Texture2D
+	
+	if gems_texture != null:
+		gems_icon.texture = gems_texture
+	else:
+		push_warning("Image introuvable : " + gems_icon_path)
+	
+	gems_container.add_child(gems_icon)
 	
 	var recharge_container := HBoxContainer.new()
+	recharge_container.name = "RechargeContainer"
 	recharge_container.custom_minimum_size = Vector2(0, 64)
 	recharge_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(recharge_container)
+	main_header.add_child(recharge_container)
 	
 	recharge_background = PanelContainer.new()
 	recharge_background.name = "RechargeContainer"
@@ -241,9 +311,10 @@ func _build_interface() -> void:
 	recharge_bg_style_box.set_content_margin_all(20.0)
 	
 	recharge_background.add_theme_stylebox_override("panel", recharge_bg_style_box)
-	header.add_child(recharge_background)
+	main_header.add_child(recharge_background)
 	
 	recharge_label = Label.new()
+	recharge_label.name = "RechargeLabel"
 	recharge_label.text = ""
 	recharge_label.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TEXT)
 	recharge_label.add_theme_color_override("font_color", ACCENT_COLOR)
@@ -255,7 +326,7 @@ func _build_interface() -> void:
 	center_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	center_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	center_panel_style = _make_panel_style(PANEL_COLOR, 20)
-	center_panel_style.content_margin_left = 32
+	center_panel_style.content_margin_left = 0
 	center_panel_style.content_margin_right = 32
 	center_panel.add_theme_stylebox_override("panel", center_panel_style)
 	layout.add_child(center_panel)
@@ -286,6 +357,7 @@ func _build_interface() -> void:
 
 	# Navigation permanente en bas.
 	var navigation_margin := MarginContainer.new()
+	navigation_margin.name = "NavigationMargin"
 	navigation_margin.custom_minimum_size = Vector2(0, 68)
 	navigation_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	navigation_margin.add_theme_constant_override("margin_left", 20)
@@ -318,6 +390,7 @@ func _build_interface() -> void:
 # Permet de créer un bouton avec un texte personalisé
 func _make_nav_button(label_text: String) -> Button:
 	var button := Button.new()
+	button.name = "GenericButton"
 	button.text = label_text
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -443,45 +516,50 @@ func _show_games() -> void:
 	
 	content.add_child(GameManager.create_title_header(current_tab, 28))
 
-	var description := Label.new()
-	description.text = "Choisis ta prochaine épreuve, aventurier."
-	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	description.add_theme_color_override("font_color", GameManager.TEXT_COLOR)
-	content.add_child(description)
+	var subtitle := Label.new()
+	subtitle.name = "Subtitle"
+	subtitle.text = "Choisis ta prochaine épreuve, aventurier."
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_color_override("font_color", GameManager.TEXT_COLOR)
+	content.add_child(subtitle)
 
 	# On affiche la liste des mini-jeux
 	for mini_game in MINI_GAMES:
-		var game_button := Button.new()
-		game_button.text = "%s  —  %d points" % [
+		var mini_game_button := Button.new()
+		mini_game_button.name = "MiniGameButton"
+		mini_game_button.text = "%s  —  %d points" % [
 			mini_game["name"],
 			mini_game["cost"]
 		]
-		game_button.custom_minimum_size = Vector2(0, 100)
-		game_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		game_button.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_BUTTON)
-		GameManager.apply_button_skin(game_button)
+		mini_game_button.custom_minimum_size = Vector2(0, 100)
+		mini_game_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		mini_game_button.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_BUTTON)
+		GameManager.apply_button_skin(mini_game_button)
 
 		if mini_game["id"] == "mystery_doors":
-			game_button.pressed.connect(_show_not_enough_credit)
+			mini_game_button.pressed.connect(_show_not_enough_credit)
 
-		content.add_child(game_button)
+		content.add_child(mini_game_button)
 
 # Prépare la vue pour le mini-jeu des portes
 func _show_not_enough_credit() -> void:
 	if not GameManager.spend_points(DOORS_ENTRY_COST):
 		_clear_content()
 
-		var message := Label.new()
-		message.text = "Pas assez de points !"
-		message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		content.add_child(message)
+		var not_enough_credit_label := Label.new()
+		not_enough_credit_label.name = "NotEnoughCreditLabel"
+		not_enough_credit_label.text = "Pas assez de points !"
+		not_enough_credit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		content.add_child(not_enough_credit_label)
 
 		var balance_label := Label.new()
+		balance_label.name = "BalanceLabel"
 		balance_label.text = "Il te faut 10 points pour jouer."
 		balance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		content.add_child(balance_label)
 
 		var back_button := Button.new()
+		back_button.name = "BackButton"
 		back_button.text = "Retour aux mini-jeux"
 		back_button.pressed.connect(_show_games)
 		GameManager.apply_button_skin(back_button)
@@ -568,6 +646,7 @@ func _show_shop() -> void:
 	content.add_child(GameManager.create_title_header(current_tab, 25))
 
 	var subtitle := Label.new()
+	subtitle.name = "Subtitle"
 	subtitle.text = "Ouvre un pack et découvre tes figurines !"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -596,14 +675,15 @@ func _add_pack_button(
 	pack_description: String,
 	pack_id: String
 	) -> void:
-	var button := Button.new()
-	button.text = pack_title + "\n" + pack_description
-	button.custom_minimum_size = Vector2(0, 90)
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_BUTTON)
-	button.pressed.connect(_buy_pack.bind(pack_id))
-	GameManager.apply_button_skin(button)
-	content.add_child(button)
+	var pack_button := Button.new()
+	pack_button.name = "PackButton"
+	pack_button.text = pack_title + "\n" + pack_description
+	pack_button.custom_minimum_size = Vector2(0, 90)
+	pack_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pack_button.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_BUTTON)
+	pack_button.pressed.connect(_buy_pack.bind(pack_id))
+	GameManager.apply_button_skin(pack_button)
+	content.add_child(pack_button)
 
 # Permet d'acheter un pack
 func _buy_pack(pack_id: String) -> void:
@@ -617,26 +697,29 @@ func _show_pack_results(result: Dictionary) -> void:
 
 	content.add_child(GameManager.create_title_header("✨ Résultat du tirage", 24))
 
-	var message := Label.new()
-	message.text = str(result.get("message", ""))
-	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	message.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_SUBTITLE)
-	message.add_theme_color_override("font_color", GameManager.TEXT_COLOR)
-	content.add_child(message)
+	var pack_results_message := Label.new()
+	pack_results_message.name = "PackResultsMessage"
+	pack_results_message.text = str(result.get("message", ""))
+	pack_results_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pack_results_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	pack_results_message.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_SUBTITLE)
+	pack_results_message.add_theme_color_override("font_color", GameManager.TEXT_COLOR)
+	content.add_child(pack_results_message)
 
 	var obtained: Array = result.get("figurines", [])
 
 	if bool(result.get("success", false)):
-		var scroll := ScrollContainer.new()
-		scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		content.add_child(scroll)
+		var scroll_container := ScrollContainer.new()
+		scroll_container.name = "ScrollContainer"
+		scroll_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		scroll_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		content.add_child(scroll_container)
 
-		var list := VBoxContainer.new()
-		list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		list.add_theme_constant_override("separation", 10)
-		scroll.add_child(list)
+		var obtained_pack_list := VBoxContainer.new()
+		obtained_pack_list.name = "ObtainedPacksList"
+		obtained_pack_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		obtained_pack_list.add_theme_constant_override("separation", 10)
+		scroll_container.add_child(obtained_pack_list)
 
 		for figurine in obtained:
 			var character: Dictionary = GameManager.get_character_data(str(figurine.get("character_id", "")))
@@ -644,25 +727,28 @@ func _show_pack_results(result: Dictionary) -> void:
 			if character.is_empty():
 				continue
 
-			var card := PanelContainer.new()
-			card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			var obtained_pack_card := PanelContainer.new()
+			obtained_pack_card.name = "ObtainedPackCard"
+			obtained_pack_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 			var color := GameManager._get_rarity_color(character.get("rarity", 0))
-			card.add_theme_stylebox_override("panel", _make_panel_style(color, 12))
-			list.add_child(card)
+			obtained_pack_card.add_theme_stylebox_override("panel", _make_panel_style(color, 12))
+			obtained_pack_list.add_child(obtained_pack_card)
 
-			var character_label := Label.new()
-			character_label.text = (
+			var character_name := Label.new()
+			character_name.name = "CharacterName"
+			character_name.text = (
 				str(character.get("name", "Inconnu"))
 				+ "\n"
 				+ GameManager._get_rarity_label(character.get("rarity", 0))
 			)
-			character_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			character_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			character_label.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TEXT)
-			card.add_child(character_label)
+			character_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			character_name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			character_name.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TEXT)
+			obtained_pack_card.add_child(character_name)
 
 	var return_shop_button := Button.new()
+	return_shop_button.name = "ReturnShopButton"
 	return_shop_button.text = "← Retour à la boutique"
 	return_shop_button.custom_minimum_size = Vector2(0, 48)
 	return_shop_button.pressed.connect(_show_shop)
@@ -670,6 +756,7 @@ func _show_pack_results(result: Dictionary) -> void:
 	content.add_child(return_shop_button)
 
 	var view_collection_button := Button.new()
+	view_collection_button.name = "ViewCollectionButton"
 	view_collection_button.text = "Voir ma collection"
 	view_collection_button.custom_minimum_size = Vector2(0, 48)
 	view_collection_button.pressed.connect(_show_collection)
@@ -681,13 +768,13 @@ func _on_points_changed(new_total: int) -> void:
 	points = new_total
 	
 	if is_instance_valid(points_label):
-		points_label.text = str(points) + " points"
+		points_label.text = _add_missing_zeros(points)
 	
 	_update_recharge_label()
 
 func _on_gems_changed(new_total: int) -> void:
 	if is_instance_valid(gems_label):
-		gems_label.text = "💎 " + str(new_total)
+		gems_label.text = _add_missing_zeros(new_total)
 
 func _on_currency_limit_reached(currency_name: String) -> void:
 	var currency_label := "points" if currency_name == "points" else "gemmes"
@@ -760,3 +847,21 @@ func _update_recharge_label() -> void:
 		minutes,
 		seconds
 	]
+
+# Ajoute des zéros au début d'un nombre pour qu'il fasse exactement 6 caractères
+# de long (cela transforme automatiquement le nombre en chaine de caractères)
+func _add_missing_zeros(raw_value: int)-> String:
+	var number_formatted: String
+	if raw_value < 10:
+		number_formatted = "00000" + str(raw_value)
+	elif raw_value >= 10 && raw_value < 100:
+		number_formatted = "0000" + str(raw_value)
+	elif raw_value >= 100 && raw_value < 1000:
+		number_formatted = "000" + str(raw_value)
+	elif raw_value >= 1000 && raw_value < 10000:
+		number_formatted = "00" + str(raw_value)
+	elif raw_value >= 10000 && raw_value < 100000:
+		number_formatted = "0" + str(raw_value)
+	else:
+		number_formatted = str(raw_value)
+	return number_formatted

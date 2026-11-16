@@ -16,6 +16,7 @@ func configure(character: Dictionary, figure: Dictionary) -> void:
 func _build_interface() -> void:
 	# Organisation verticale.
 	var layout := VBoxContainer.new()
+	layout.name = "Layout"
 	layout.set_anchors_and_offsets_preset(
 		Control.PRESET_FULL_RECT
 	)
@@ -24,6 +25,7 @@ func _build_interface() -> void:
 
 	# En-tête.
 	var header := VBoxContainer.new()
+	header.name = "Header"
 	header.custom_minimum_size = Vector2(0, 85)
 	header.add_theme_constant_override("separation", 4)
 	layout.add_child(header)
@@ -37,12 +39,14 @@ func _build_interface() -> void:
 	
 	# Zone réservée à l'image : elle ne peut pas empiéter sur le titre
 	var image_area := Control.new()
+	image_area.name = "ImageArea"
 	image_area.custom_minimum_size = Vector2(0, 520)
 	image_area.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	layout.add_child(image_area)
 	
 	# Illustration du personnage
 	var character_image := TextureRect.new()
+	character_image.name = "CharacterImage"
 	character_image.custom_minimum_size = Vector2(480, 480)
 	character_image.size = Vector2(480, 480)
 	character_image.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
@@ -83,12 +87,13 @@ func _build_interface() -> void:
 	
 	float_tween.bind_node(character_image)
 
-	var rarity := Label.new()
-	rarity.text = "Rareté : " + GameManager._get_rarity_label(selected_character.get("rarity", 0))
-	rarity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	rarity.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_SUBTITLE)
-	rarity.add_theme_color_override("font_color", GameManager._get_rarity_color(selected_character.get("rarity", 0)))
-	layout.add_child(rarity)
+	var rarity_label := Label.new()
+	rarity_label.name = "RarityLabel"
+	rarity_label.text = "Rareté : " + GameManager._get_rarity_label(selected_character.get("rarity", 0))
+	rarity_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rarity_label.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_SUBTITLE)
+	rarity_label.add_theme_color_override("font_color", GameManager._get_rarity_color(selected_character.get("rarity", 0)))
+	layout.add_child(rarity_label)
 
 	var desc_container := PanelContainer.new()
 	desc_container.name = "DescriptionContainer"
@@ -104,17 +109,19 @@ func _build_interface() -> void:
 	desc_margins.add_theme_constant_override("margin_bottom", 16)
 	desc_container.add_child(desc_margins)
 
-	var description := Label.new()
-	description.text = str(selected_character.get("description", "Aucune description."))
-	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	description.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	description.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	description.add_theme_color_override("font_color", GameManager.TEXT_COLOR)
-	desc_margins.add_child(description)
+	var character_description := Label.new()
+	character_description.name = "CharacterDescription"
+	character_description.text = str(selected_character.get("description", "Aucune description."))
+	character_description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	character_description.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	character_description.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	character_description.add_theme_color_override("font_color", GameManager.TEXT_COLOR)
+	desc_margins.add_child(character_description)
 
 	var sell_value := int(selected_character.get("sell_value", 0))
 
 	var sell_button := Button.new()
+	sell_button.name = "SellButton"
 	sell_button.text = "Vendre pour " + str(sell_value) + " points"
 	sell_button.custom_minimum_size = Vector2(0, 50)
 	sell_button.pressed.connect(
@@ -127,6 +134,7 @@ func _build_interface() -> void:
 	layout.add_child(sell_button)
 
 	var back_button := Button.new()
+	back_button.name = "BackButton"
 	back_button.text = "← Retour à la collection"
 	back_button.custom_minimum_size = Vector2(0, 45)
 	back_button.pressed.connect(

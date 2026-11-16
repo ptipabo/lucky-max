@@ -155,10 +155,12 @@ func _make_button_stylebox(texture: Texture2D) -> StyleBoxTexture:
 
 func create_title_header(title_text: String, font_size: int = FONT_SIZE_TITLE) -> Control:
 	var title_container := Control.new()
+	title_container.name = "Title"
 	title_container.custom_minimum_size = Vector2(0, 100)
 	title_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	var title_background := TextureRect.new()
+	title_background.name = "Background"
 	title_background.texture = TITLE_BACKGROUND_TEXTURE
 	title_background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	title_background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -167,6 +169,7 @@ func create_title_header(title_text: String, font_size: int = FONT_SIZE_TITLE) -
 	title_container.add_child(title_background)
 
 	var title_label := Label.new()
+	title_label.name = "Label"
 	title_label.text = title_text
 	title_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	title_label.offset_top = 30

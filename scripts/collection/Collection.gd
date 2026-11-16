@@ -11,53 +11,58 @@ func _process(delta: float) -> void:
 	pass
 
 func _build_interface() -> void:
-	
 	# Organisation verticale.
-	var layout := VBoxContainer.new()
-	layout.set_anchors_and_offsets_preset(
+	var collection_layout := VBoxContainer.new()
+	collection_layout.name = "CollectionLayout"
+	collection_layout.set_anchors_and_offsets_preset(
 		Control.PRESET_FULL_RECT
 	)
-	layout.add_theme_constant_override("separation", 8)
-	add_child(layout)
+	collection_layout.add_theme_constant_override("separation", 8)
+	add_child(collection_layout)
 
 	# En-tête.
-	var header := VBoxContainer.new()
-	header.custom_minimum_size = Vector2(0, 85)
-	header.add_theme_constant_override("separation", 4)
-	layout.add_child(header)
+	var collection_header := VBoxContainer.new()
+	collection_header.name = "CollectionHeader"
+	collection_header.custom_minimum_size = Vector2(0, 85)
+	collection_header.add_theme_constant_override("separation", 4)
+	collection_layout.add_child(collection_header)
 	
-	header.add_child(GameManager.create_title_header("Collection", GameManager.FONT_SIZE_TITLE))
+	collection_header.add_child(GameManager.create_title_header("Collection", GameManager.FONT_SIZE_TITLE))
 
 	var figurines: Array = GameManager.get_collection()
 
-	var count_label := Label.new()
-	count_label.text = str(figurines.size()) + " figurine(s) possédée(s)"
-	count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	count_label.add_theme_color_override("font_color", GameManager.TEXT_COLOR)
-	layout.add_child(count_label)
+	var collection_count_label := Label.new()
+	collection_count_label.name = "CollectionCountLabel"
+	collection_count_label.text = str(figurines.size()) + " figurine(s) possédée(s)"
+	collection_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	collection_count_label.add_theme_color_override("font_color", GameManager.TEXT_COLOR)
+	collection_layout.add_child(collection_count_label)
 
 	if figurines.is_empty():
-		var empty_label := Label.new()
-		empty_label.text = "Ta collection est vide !\nVa dans la Boutique pour obtenir ta première figurine."
-		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		empty_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		empty_label.add_theme_color_override("font_color", GameManager.TEXT_COLOR)
-		layout.add_child(empty_label)
+		var empty_collection_label := Label.new()
+		empty_collection_label.name = "EmptyCollectionLabel"
+		empty_collection_label.text = "Ta collection est vide !\nVa dans la Boutique pour obtenir ta première figurine."
+		empty_collection_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		empty_collection_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		empty_collection_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		empty_collection_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		empty_collection_label.add_theme_color_override("font_color", GameManager.TEXT_COLOR)
+		collection_layout.add_child(empty_collection_label)
 		return
 
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	layout.add_child(scroll)
+	var collection_scroll_container := ScrollContainer.new()
+	collection_scroll_container.name = "CollectionScrollContainer"
+	collection_scroll_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	collection_scroll_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	collection_layout.add_child(collection_scroll_container)
 
-	var grid := GridContainer.new()
-	grid.columns = 4
-	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	grid.add_theme_constant_override("h_separation", 6)
-	grid.add_theme_constant_override("v_separation", 8)
-	scroll.add_child(grid)
+	var collection_grid := GridContainer.new()
+	collection_grid.name = "CollectionGrid"
+	collection_grid.columns = 4
+	collection_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	collection_grid.add_theme_constant_override("h_separation", 6)
+	collection_grid.add_theme_constant_override("v_separation", 8)
+	collection_scroll_container.add_child(collection_grid)
 
 	for figurine in figurines:
 		var character_id := str(figurine.get("character_id", ""))
@@ -67,11 +72,12 @@ func _build_interface() -> void:
 			continue
 		
 		# Carte du personnage
-		var card := Button.new()
-		card.custom_minimum_size = Vector2(0, 145)
-		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		card.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-		card.focus_mode = Control.FOCUS_NONE
+		var collection_card := Button.new()
+		collection_card.name = "CollectionCard"
+		collection_card.custom_minimum_size = Vector2(0, 145)
+		collection_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		collection_card.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		collection_card.focus_mode = Control.FOCUS_NONE
 
 		var card_style := StyleBoxFlat.new()
 		card_style.bg_color = Color("#29483B")
@@ -79,14 +85,14 @@ func _build_interface() -> void:
 		card_style.set_corner_radius_all(8)
 		card_style.set_border_width_all(3)
 		card_style.set_content_margin_all(6)
-		card.add_theme_stylebox_override("normal", card_style)
+		collection_card.add_theme_stylebox_override("normal", card_style)
 		var hover_style: StyleBoxFlat = card_style.duplicate()
 		hover_style.bg_color = Color("#365C49")
-		card.add_theme_stylebox_override("hover", hover_style)
+		collection_card.add_theme_stylebox_override("hover", hover_style)
 		var pressed_style: StyleBoxFlat = card_style.duplicate()
 		pressed_style.bg_color = Color("#1F3B2F")
-		card.add_theme_stylebox_override("pressed", pressed_style)
-		GameManager.apply_button_skin(card)
+		collection_card.add_theme_stylebox_override("pressed", pressed_style)
+		GameManager.apply_button_skin(collection_card)
 
 		# Contenu vertical de la carte
 		var card_content := VBoxContainer.new()
@@ -95,7 +101,7 @@ func _build_interface() -> void:
 		card_content.offset_top = 22
 		card_content.add_theme_constant_override("separation", 3)
 		card_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		card.add_child(card_content)
+		collection_card.add_child(card_content)
 
 		# Image du personnage
 		var character_image := TextureRect.new()
@@ -135,11 +141,11 @@ func _build_interface() -> void:
 		#rarity_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		#card_content.add_child(rarity_label)
 		
-		card.pressed.connect(
+		collection_card.pressed.connect(
 			_on_card_pressed.bind(figurine)
 		)
 
-		grid.add_child(card)
+		collection_grid.add_child(collection_card)
 
 func _get_character_preview_path(character: Dictionary) -> String:
 	var image_name := str(character.get("image", ""))

@@ -1330,6 +1330,21 @@ func _update_combat_ui() -> void:
 			or not pending_action.is_empty()
 			or str(technique_button.get_meta("technique_id", "")).is_empty()
 		)
+
+		var is_selected := (
+			not pending_action.is_empty()
+			and str(technique_button.get_meta("technique_id", "")) == pending_action
+		)
+
+		var icon_tint: Color = (
+			Color.WHITE
+			if is_selected or not technique_button.disabled
+			else Color(0.45, 0.45, 0.45, 1.0)
+		)
+
+		for child in technique_button.get_children():
+			if child is TextureRect:
+				child.modulate = icon_tint
 	cancel_action_button.visible = not pending_action.is_empty()
 
 	if current_phase == BattlePhase.PLAYER_MOVEMENT:
@@ -1396,9 +1411,9 @@ func _on_cancel_action_pressed() -> void:
 
 # Génère un contour lumineux sur les figurines ciblables par une attaque ou une technique
 func _set_enemy_highlight(instance_id: int, enabled: bool) -> void:
-	var sprite: TextureRect = figure_visuals.get(instance_id) as TextureRect
+	var sprite = figure_visuals.get(instance_id)
 
-	if sprite == null or not is_instance_valid(sprite):
+	if not is_instance_valid(sprite):
 		return
 
 	if enabled:
@@ -1648,7 +1663,8 @@ func _apply_damage(
 	damage_type: String = "physical",
 	magic_bonus: int = 0,
 	can_dodge: bool = true,
-	source_name: String = ""
+	source_name: String = "",
+	keep_visual_if_defeated: bool = false
 ) -> bool:
 	if amount <= 0 or not unit_health.has(instance_id):
 		return false
@@ -1689,12 +1705,13 @@ func _apply_damage(
 	_show_combat_message(
 		"%s subit %d dégâts (%s)." % [target_name, amount, damage_source]
 	)
-	var flash_color := Color("#F06B5F")
-	if damage_type == "magic":
-		flash_color = Color("#6CCCF0")
-	elif damage_type == "effect":
-		flash_color = Color("#F2A64A")
-	_flash_unit(instance_id, flash_color)
+	var flash_color := Color("#ff3c00ff")
+	#if damage_type == "magic":
+		#flash_color = Color("ff3c00ff")
+	#elif damage_type == "effect":
+		#flash_color = Color("#F2A64A")
+	var target_sprite = figure_visuals.get(instance_id)
+	_flash_unit(instance_id, flash_color, target_sprite)
 	_update_unit_health_display(instance_id)
 	if int(unit_health[instance_id]) == 0:
 		if instance_id > 0:
@@ -1703,24 +1720,48 @@ func _apply_damage(
 			player_acted.erase(instance_id)
 		else:
 			enemy_figure_positions.erase(instance_id)
-		var sprite: TextureRect = figure_visuals.get(instance_id)
+
+		var sprite = figure_visuals.get(instance_id)
+
 		if sprite != null:
-			sprite.queue_free()
-			figure_visuals.erase(instance_id)
-			enemy_figure_visuals.erase(sprite)
+			if not keep_visual_if_defeated:
+				sprite.queue_free()
+				figure_visuals.erase(instance_id)
+				enemy_figure_visuals.erase(sprite)
+
 		unit_health.erase(instance_id)
 		unit_max_health.erase(instance_id)
 		status_effects.erase(instance_id)
 	return true
 
-func _flash_unit(instance_id: int, flash_color: Color) -> void:
-	var sprite: TextureRect = figure_visuals.get(instance_id)
-	if sprite == null or not is_instance_valid(sprite):
+func _flash_unit(
+	instance_id: int,
+	flash_color: Color,
+	target_sprite: TextureRect = null
+) -> void:
+	var sprite = target_sprite
+
+	if sprite == null:
+		sprite = figure_visuals.get(instance_id)
+
+	if not is_instance_valid(sprite):
 		return
-	sprite.modulate = Color.WHITE
+
+	sprite.self_modulate = Color.WHITE
+
 	var tween := create_tween()
-	tween.tween_property(sprite, "modulate", flash_color, 0.08)
-	tween.tween_property(sprite, "modulate", Color.WHITE, 0.22)
+	tween.tween_property(
+		sprite,
+		"self_modulate",
+		flash_color,
+		0.08
+	)
+	tween.tween_property(
+		sprite,
+		"self_modulate",
+		Color.WHITE,
+		0.22
+	)
 
 func _apply_healing(instance_id: int, amount: int) -> void:
 	if amount <= 0 or not unit_health.has(instance_id):
@@ -2275,3 +2316,60 @@ func _start_player_turn() -> void:
 	selected_actor_id = -1
 	pending_action = ""
 	_update_combat_ui()
+
+func _play_technique_animation(
+	animation_name: String,
+	target_position: Vector2,
+	target_size: Vector2,
+	target_z_index: int,
+	target_sprite: TextureRect = null,
+	target_defeated: bool = false
+) -> void:
+	var animation := TextureRect.new()
+
+	animation.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	animation.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	animation.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	# Conserver les proportions des images (234 x 363).
+	var animation_height := target_size.y
+	var animation_width := animation_height * 234.0 / 363.0
+
+	animation.size = Vector2(animation_width, animation_height)
+	animation.position = Vector2(
+		target_position.x + (target_size.x - animation_width) / 2.0,
+		target_position.y
+	)
+
+	animation.z_as_relative = false
+	animation.z_index = target_z_index + 1
+
+	figures_layer.add_child(animation)
+	
+	# Jouer les 8 images à 12 images par seconde.
+	for frame_index in range(1, 9):
+		var image_path := (
+			"res://assets/animations/techniques/%s_animation_%02d.png"
+			% [animation_name, frame_index]
+		)
+
+		var texture := load(image_path) as Texture2D
+
+		if texture == null:
+			push_warning("Animation introuvable : " + image_path)
+			break
+
+		animation.texture = texture
+
+		await get_tree().create_timer(1.0 / 12.0).timeout
+
+	if is_instance_valid(animation):
+		animation.queue_free()
+
+	# Laisser le flash d'impact se terminer.
+	if target_defeated:
+		await get_tree().create_timer(0.3).timeout
+
+	# Supprimer la figurine uniquement si elle a été éliminée.
+	if target_defeated and is_instance_valid(target_sprite):
+		target_sprite.queue_free()

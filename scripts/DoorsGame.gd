@@ -62,41 +62,45 @@ func _build_game() -> void:
 	game_margins.add_theme_constant_override("margin_bottom", 20)
 	add_child(game_margins)
 	
-	var layout := VBoxContainer.new()
-	layout.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	layout.add_theme_constant_override("separation", 18)
-	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	game_margins.add_child(layout)
+	var doors_game_layout := VBoxContainer.new()
+	doors_game_layout.name = "DoorsGameLayout"
+	doors_game_layout.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	doors_game_layout.add_theme_constant_override("separation", 18)
+	doors_game_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	doors_game_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	game_margins.add_child(doors_game_layout)
 
-	layout.add_child(GameManager.create_title_header("Pierres sacrées", 27))
+	doors_game_layout.add_child(GameManager.create_title_header("Pierres sacrées", 27))
 
 	instruction_label = Label.new()
+	instruction_label.name = "InstructionLabel"
 	instruction_label.text = "Choisis une divinité et découvre ce qu'elle t'offre."
 	instruction_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	instruction_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	instruction_label.add_theme_color_override("font_color", TEXT_COLOR)
-	layout.add_child(instruction_label)
+	doors_game_layout.add_child(instruction_label)
 
 	# Zone de jeu
 	var game_area := Control.new()
+	game_area.name = "GameArea"
 	game_area.custom_minimum_size = Vector2(620, 320)
 	game_area.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	game_area.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	layout.add_child(game_area)
+	doors_game_layout.add_child(game_area)
 
 	# Plateau de pierre
-	var table := TextureRect.new()
-	table.texture = load("res://assets/plates/table.png")
-	table.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	table.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	table.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var stone_table := TextureRect.new()
+	stone_table.name = "StoneTable"
+	stone_table.texture = load("res://assets/plates/table.png")
+	stone_table.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	stone_table.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	stone_table.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	# On déplace la table légèrement vers le haut
 	var table_pos_fix := 151
-	table.offset_top -= table_pos_fix
-	table.offset_bottom -= table_pos_fix
-	table.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	game_area.add_child(table)
+	stone_table.offset_top -= table_pos_fix
+	stone_table.offset_bottom -= table_pos_fix
+	stone_table.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	game_area.add_child(stone_table)
 
 	var plate_data = [
 		{
@@ -116,50 +120,54 @@ func _build_game() -> void:
 	for i in range(3):
 		var plates_size = Vector2(90, 116)
 		
-		var holder := Control.new()
-		holder.position = plate_data[i]["pos"]
-		holder.size = plates_size
-		holder.custom_minimum_size = plates_size
-		game_area.add_child(holder)
-		plate_controls.append(holder)
+		var plate_holder := Control.new()
+		plate_holder.name = "PlateHolder"
+		plate_holder.position = plate_data[i]["pos"]
+		plate_holder.size = plates_size
+		plate_holder.custom_minimum_size = plates_size
+		game_area.add_child(plate_holder)
+		plate_controls.append(plate_holder)
 		
-		var button := TextureButton.new()
-		button.texture_normal = load(
+		var plate_button := TextureButton.new()
+		plate_button.name = "PlateButton"
+		plate_button.texture_normal = load(
 			"res://assets/plates/%s.png"
 			% plate_data[i]["name"]
 		)
-		button.texture_pressed = button.texture_normal
-		button.texture_hover = button.texture_normal
+		plate_button.texture_pressed = plate_button.texture_normal
+		plate_button.texture_hover = plate_button.texture_normal
 		
 		# Force la plaque normale à respecter la taille du holder.
-		button.ignore_texture_size = true
-		button.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-		button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		plate_button.ignore_texture_size = true
+		plate_button.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+		plate_button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		var plates_pos_fix := 108
-		button.offset_top += plates_pos_fix
-		button.offset_bottom += plates_pos_fix
-		button.size = plates_size
-		button.custom_minimum_size = Vector2.ZERO
-		button.pressed.connect(_on_door_pressed.bind(i))
-		holder.add_child(button)
+		plate_button.offset_top += plates_pos_fix
+		plate_button.offset_bottom += plates_pos_fix
+		plate_button.size = plates_size
+		plate_button.custom_minimum_size = Vector2.ZERO
+		plate_button.pressed.connect(_on_door_pressed.bind(i))
+		plate_holder.add_child(plate_button)
 		
-		var glow := TextureRect.new()
-		glow.texture = load(
+		var plate_glow := TextureRect.new()
+		plate_glow.name = "PlateGlow"
+		plate_glow.texture = load(
 			"res://assets/plates/%s_glow.png"
 			% plate_data[i]["name"]
 		)
-		glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		glow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		glow.offset_top += plates_pos_fix
-		glow.offset_bottom += plates_pos_fix
-		glow.size = plates_size
-		glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		glow.visible = false
-		holder.add_child(glow)
+		plate_glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		plate_glow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		plate_glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		plate_glow.offset_top += plates_pos_fix
+		plate_glow.offset_bottom += plates_pos_fix
+		plate_glow.size = plates_size
+		plate_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		plate_glow.visible = false
+		plate_holder.add_child(plate_glow)
 		
 		# Plateau de pierre
 		var table_bottom := TextureRect.new()
+		table_bottom.name = "TableBottom"
 		table_bottom.texture = load("res://assets/plates/table_bottom.png")
 		table_bottom.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		table_bottom.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -170,16 +178,17 @@ func _build_game() -> void:
 		table_bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		game_area.add_child(table_bottom)
 
-		doors.append(button)
-		glow_overlays.append(glow)
+		doors.append(plate_button)
+		glow_overlays.append(plate_glow)
 
 	result_label = Label.new()
+	result_label.name = "ResultLabel"
 	result_label.text = ""
 	result_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	result_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	result_label.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_TEXT)
 	result_label.add_theme_color_override("font_color", GOLD)
-	layout.add_child(result_label)
+	doors_game_layout.add_child(result_label)
 
 	_build_replay_overlay()
 
@@ -209,25 +218,28 @@ func _build_replay_overlay() -> void:
 	add_child(replay_overlay)
 
 	# On crée un conteneur qui maintiendra le cadre contenant le bouton "Rejouer" au centre de l'écran
-	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(
+	var replay_center_container := CenterContainer.new()
+	replay_center_container.name = "ReplayCenterContainer"
+	replay_center_container.set_anchors_and_offsets_preset(
 		Control.PRESET_FULL_RECT
 	)
-	center.mouse_filter = Control.MOUSE_FILTER_PASS
-	replay_overlay.add_child(center)
+	replay_center_container.mouse_filter = Control.MOUSE_FILTER_PASS
+	replay_overlay.add_child(replay_center_container)
 
 	# On ajoute du style à notre conteneur
-	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(280, 200)
-	panel.add_theme_stylebox_override(
+	var replay_panel := PanelContainer.new()
+	replay_panel.name = "ReplayPanel"
+	replay_panel.custom_minimum_size = Vector2(280, 200)
+	replay_panel.add_theme_stylebox_override(
 		"panel", _door_style(BG_COLOR)
 	)
-	center.add_child(panel)
+	replay_center_container.add_child(replay_panel)
 
 	# On crée le cadre contenant le bouton "Rejouer"
 	var replay_container := VBoxContainer.new()
+	replay_container.name = "ReplayContainer"
 	replay_container.add_theme_constant_override("separation", GameManager.FONT_SIZE_TEXT)
-	panel.add_child(replay_container)
+	replay_panel.add_child(replay_container)
 	
 	# On crée un titre pour ce cadre
 	replay_container.add_child(
@@ -235,6 +247,7 @@ func _build_replay_overlay() -> void:
 	)
 
 	overlay_message = Label.new()
+	overlay_message.name = "OverlayMessage"
 	overlay_message.text = "Veux-tu retenter ta chance, aventurier ?"
 	overlay_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	overlay_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -243,6 +256,7 @@ func _build_replay_overlay() -> void:
 
 	# On crée un bouton "Rejouer" afin de pouvoir rejouer directement au même jeu
 	replay_button = Button.new()
+	replay_button.name = "ReplayButton"
 	replay_button.text = "Rejouer"
 	replay_button.custom_minimum_size = Vector2(0, 52)
 	replay_button.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_BUTTON)
