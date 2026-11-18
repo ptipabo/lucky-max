@@ -2423,8 +2423,6 @@ func _play_technique_animation(
 	if selected_technique.get("anim_duration", 0.0) == 0.0:
 		return
 	
-	print("Animation duration > 0")
-	
 	var animation := TextureRect.new()
 
 	animation.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -2437,7 +2435,7 @@ func _play_technique_animation(
 	var animation_frames_number: Array
 	
 	sprite_size = selected_technique.get("anim_width", 0.0) / selected_technique.get("anim_height", 0.0)
-	animation_frames_number = range(1, int(selected_technique.get("anim_duration", 0)))
+	animation_frames_number = range(1, int(selected_technique.get("anim_duration", 0))+1)
 	
 	var animation_width := animation_height * sprite_size
 
