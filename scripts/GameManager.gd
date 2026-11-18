@@ -40,6 +40,13 @@ const FONT_SIZE_TITLE := 36
 const FONT_SIZE_SUBTITLE := 34
 const FONT_SIZE_BUTTON := 32
 const FONT_SIZE_TEXT := 20
+const PACKS := {
+		"mini": {"name": "MiniPack", "price": 30, "count": 1},
+		"super": {"name": "SuperPack", "price": 80, "count": 3},
+		"mega": {"name": "MegaPack", "price": 130, "count": 5},
+		"ultra": {"name": "UltraPack", "price": 250, "count": 10},
+		"giga": {"name": "GigaPack", "price": 450, "count": 20}
+	}
 
 var save_load_valid: bool = true
 var recharge_ready_at: int = 0
@@ -391,6 +398,13 @@ func get_character_data(character_id: String) -> Dictionary:
 		return {}
 
 	return characters_catalog[character_id].duplicate(true)
+	
+# Permet de récupérer toutes les infos d'un pack de la boutique
+func get_pack_data(pack_id: String) -> Dictionary:
+	if not PACKS.has(pack_id):
+		return {}
+
+	return PACKS[pack_id].duplicate(true)
 
 # --------------------------------------------------
 # SAUVEGARDE
@@ -412,7 +426,7 @@ func _save_game() -> void:
 
 	if file == null:
 		push_error(
-            "Impossible d'ouvrir la sauvegarde : "
+			"Impossible d'ouvrir la sauvegarde : "
 			+ str(FileAccess.get_open_error())
 		)
 		return
@@ -743,13 +757,7 @@ func load_techniques_catalog() -> void:
 
 # Défini les différents packs de la boutique et permet d'en acheter
 func purchase_pack(pack_id: String) -> Dictionary:
-	var packs := {
-		"mini": {"name": "MiniPack", "price": 5, "count": 1},
-		"super": {"name": "SuperPack", "price": 20, "count": 3},
-		"maxi": {"name": "MaxiPack", "price": 40, "count": 5}
-	}
-
-	if not packs.has(pack_id):
+	if not PACKS.has(pack_id):
 		return {"success": false, "message": "Pack inconnu."}
 
 	if characters_catalog.is_empty():
@@ -758,7 +766,7 @@ func purchase_pack(pack_id: String) -> Dictionary:
 			"message": "Le catalogue des personnages est vide."
 		}
 
-	var pack: Dictionary = packs[pack_id]
+	var pack: Dictionary = PACKS[pack_id]
 	var price: int = int(pack["price"])
 	var count: int = int(pack["count"])
 

@@ -138,7 +138,7 @@ func _build_interface() -> void:
 	var subtitle := Label.new()
 	subtitle.text = "Explore les terres oubliées..."
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	subtitle.add_theme_font_size_override("font_size", 14)
+	subtitle.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_SUBTITLE)
 	subtitle.add_theme_color_override("font_color", TEXT_COLOR)
 	header.add_child(subtitle)
 

@@ -9,7 +9,11 @@
 		"value": 15,
 		"range": 1,
 		"side_effect": "",
-		"unity": "point"
+		"side_effect_duration": 0,
+		"side_effect_power": 0,
+		"anim_duration": 0,
+		"anim_width": 0.0,
+		"anim_height": 0.0,
 	},
 	{
 		"id": "fire",
@@ -23,7 +27,25 @@
 		"side_effect_chance": 0.3,
 		"side_effect_duration": -1,
 		"side_effect_power": 2,
-		"unity": "point"
+		"anim_duration": 8,
+		"anim_width": 234.0,
+		"anim_height": 363.0,
+	},
+	{
+		"id": "darkness",
+		"name": "Ténèbres",
+		"type": "action",
+		"description": "Submerge la cible de ténèbres, le plongeant dans une tétanie paralysante.",
+		"icon": "darkness_icon.png",
+		"value": -4,
+		"range": 2,
+		"side_effect": "stun",
+		"side_effect_chance": 0.5,
+		"side_effect_duration": -1,
+		"side_effect_power": 0,
+		"anim_duration": 12,
+		"anim_width": 310.0,
+		"anim_height": 376.0,
 	},
 	{
 		"id": "extra_move",
@@ -32,7 +54,9 @@
 		"description": "Permet à ce personnage de se déplacer plus rapidement.",
 		"icon": "extra_move_icon.png",
 		"value": 1,
-		"unity": ""
+		"anim_duration": 0,
+		"anim_width": 0.0,
+		"anim_height": 0.0,
 	},
 	{
 		"id": "ignore_walls",
@@ -40,8 +64,7 @@
 		"type": "special",
 		"description": "Permet à ce personnage de se déplacer même sur les obstacles.",
 		"icon": "ignore_walls_icon.png",
-		"value": 0,
-		"unity": ""
+		"value": 0
 	},
 	{
 		"id": "ice",
@@ -54,7 +77,9 @@
 		"side_effect": "freeze",
 		"side_effect_chance": 0.3,
 		"side_effect_duration": 2,
-		"unity": "point"
+		"anim_duration": 12,
+		"anim_width": 400.0,
+		"anim_height": 400.0,
 	},
 	{
 		"id": "thunder",
@@ -67,7 +92,9 @@
 		"side_effect": "stun",
 		"side_effect_chance": 0.3,
 		"side_effect_duration": 1,
-		"unity": "point"
+		"anim_duration": 8,
+		"anim_width": 298.0,
+		"anim_height": 451.0,
 	},
 	{
 		"id": "wind",
@@ -80,7 +107,9 @@
 		"side_effect": "",
 		"side_effect_chance": 0,
 		"side_effect_duration": 0,
-		"unity": "point"
+		"anim_duration": 0,
+		"anim_width": 0.0,
+		"anim_height": 0.0,
 	},
 	{
 		"id": "timeskip",
@@ -93,7 +122,9 @@
 		"side_effect": "",
 		"side_effect_chance": 0,
 		"side_effect_duration": 0,
-		"unity": ""
+		"anim_duration": 0,
+		"anim_width": 0.0,
+		"anim_height": 0.0,
 	},
 	{
 		"id": "teleportation",
@@ -106,7 +137,9 @@
 		"side_effect": "exhausted",
 		"side_effect_chance": 1,
 		"side_effect_duration": 1,
-		"unity": ""
+		"anim_duration": 0,
+		"anim_width": 0.0,
+		"anim_height": 0.0,
 	},
 	{
 		"id": "resurrection",
@@ -119,7 +152,9 @@
 		"side_effect": "",
 		"side_effect_chance": 0,
 		"side_effect_duration": 0,
-		"unity": ""
+		"anim_duration": 0,
+		"anim_width": 0.0,
+		"anim_height": 0.0,
 	},
 	{
 		"id": "knight_shield",
@@ -132,7 +167,39 @@
 		"side_effect": "",
 		"side_effect_chance": 0,
 		"side_effect_duration": 0,
-		"unity": "point"
+		"anim_duration": 0,
+		"anim_width": 0.0,
+		"anim_height": 0.0,
+	},
+	{
+		"id": "hypnosis",
+		"name": "Hypnose",
+		"type": "action",
+		"description": "Permet de contrôler une figurine adverse pendant 2 tours.",
+		"icon": "hypnosis_icon.png",
+		"value": 0,
+		"range": 2,
+		"side_effect": "",
+		"side_effect_chance": 0,
+		"side_effect_duration": 0,
+		"anim_duration": 0,
+		"anim_width": 0.0,
+		"anim_height": 0.0,
+	},
+	{
+		"id": "summoning",
+		"name": "Invocation",
+		"type": "action",
+		"description": "Permet d'invoquer n'importe quelle autre figurine sur le terrain pendant 1 tour (maximum 1 à la fois).",
+		"icon": "summoning_icon.png",
+		"value": 0,
+		"range": 1,
+		"side_effect": "",
+		"side_effect_chance": 0,
+		"side_effect_duration": 0,
+		"anim_duration": 0,
+		"anim_width": 0.0,
+		"anim_height": 0.0,
 	}
 	]
 }

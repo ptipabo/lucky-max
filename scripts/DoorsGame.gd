@@ -15,7 +15,7 @@ const THIRD_COLOR := Color("#574477")
 const GOLD := Color("#FFC857")
 const TEXT_COLOR := Color("fff8e7ff")
 
-var rewards: Array[int] = []
+var rewards: Array[int] = [0,5,30]
 var doors: Array[TextureButton] = []
 var glow_overlays: Array[TextureRect] = []
 var plate_controls: Array[Control] = []
@@ -243,7 +243,7 @@ func _build_replay_overlay() -> void:
 	
 	# On crée un titre pour ce cadre
 	replay_container.add_child(
-		GameManager.create_title_header("Les Dieux ont parlés.", GameManager.FONT_SIZE_TITLE)
+		GameManager.create_title_header("Les Dieux ont parlés.", GameManager.FONT_SIZE_TEXT)
 	)
 
 	overlay_message = Label.new()
@@ -269,7 +269,7 @@ func _on_replay_pressed() -> void:
 
 func _start_round() -> void:
 	has_started = false
-	rewards.clear()
+	rewards.shuffle()
 	selected_door = -1
 	game_finished = false
 	result_label.text = ""
@@ -277,8 +277,6 @@ func _start_round() -> void:
 	replay_overlay.visible = false
 
 	for i in range(3):
-		rewards.append(randi_range(0, 30))
-
 		var door := doors[i]
 		door.disabled = false
 		door.disabled = false

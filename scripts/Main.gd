@@ -520,6 +520,7 @@ func _show_games() -> void:
 	subtitle.name = "Subtitle"
 	subtitle.text = "Choisis ta prochaine épreuve, aventurier."
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_SUBTITLE)
 	subtitle.add_theme_color_override("font_color", GameManager.TEXT_COLOR)
 	content.add_child(subtitle)
 
@@ -650,24 +651,19 @@ func _show_shop() -> void:
 	subtitle.text = "Ouvre un pack et découvre tes figurines !"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	subtitle.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_SUBTITLE)
 	subtitle.add_theme_color_override("font_color", GameManager.TEXT_COLOR)
 	content.add_child(subtitle)
-
-	_add_pack_button(
-		"🎁 MiniPack",
-		"1 figurine · 5 points",
-		"mini"
-	)
-	_add_pack_button(
-		"🎉 SuperPack",
-		"3 figurines · 20 points",
-		"super"
-	)
-	_add_pack_button(
-		"🌟 MaxiPack",
-		"5 figurines · 40 points",
-		"maxi"
-	)
+	
+	var pack_data: Dictionary
+	
+	for pack in GameManager.PACKS:
+		pack_data = GameManager.get_pack_data(pack)
+		_add_pack_button(
+			pack_data.get('name'),
+			str(pack_data.get('count')) + " figurine · " + str(pack_data.get('price')) + " points",
+			pack
+		)
 
 # Génère un bouton dont le texte est personalisable
 func _add_pack_button(

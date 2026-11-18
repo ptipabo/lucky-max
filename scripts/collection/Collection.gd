@@ -35,6 +35,7 @@ func _build_interface() -> void:
 	collection_count_label.name = "CollectionCountLabel"
 	collection_count_label.text = str(figurines.size()) + " figurine(s) possédée(s)"
 	collection_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	collection_count_label.add_theme_font_size_override("font_size", GameManager.FONT_SIZE_SUBTITLE)
 	collection_count_label.add_theme_color_override("font_color", GameManager.TEXT_COLOR)
 	collection_layout.add_child(collection_count_label)
 

@@ -65,8 +65,6 @@ var attack_button: Button
 var technique_row: HBoxContainer
 var technique_buttons: Array[Button] = []
 var cancel_action_button: Button
-var combat_message_label: Label
-var combat_message_timer: Timer
 var current_stage_id: String = ""
 
 # Positions des figurines déjà placées.
@@ -197,12 +195,6 @@ func _build_interface() -> void:
 	)
 	player_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	main_layout.add_child(player_label)
-
-	combat_message_timer = Timer.new()
-	combat_message_timer.one_shot = true
-	combat_message_timer.wait_time = 1.8
-	combat_message_timer.timeout.connect(_on_combat_message_timeout)
-	add_child(combat_message_timer)
 	
 	# Barre des figurines du joueur.
 	player_figures_container = HBoxContainer.new()
@@ -1235,12 +1227,6 @@ func _create_combat_controls() -> void:
 	turn_status_label.add_theme_color_override("font_color", Color("#F2D58B"))
 	turn_controls.add_child(turn_status_label)
 
-	combat_message_label = Label.new()
-	combat_message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	combat_message_label.add_theme_color_override("font_color", Color("#FFC83C"))
-	combat_message_label.visible = false
-	turn_controls.add_child(combat_message_label)
-
 	action_controls = VBoxContainer.new()
 	action_controls.add_theme_constant_override("separation", 6)
 	turn_controls.add_child(action_controls)
@@ -1678,12 +1664,8 @@ func _apply_damage(
 			1.0
 		)
 		if randf() < dodge_chance:
-			var character_name := str(
-				target_figure.get("data", {}).get("name", "La figurine")
-			)
-			var attacker_name := source_name if not source_name.is_empty() else "l'attaque"
-			_show_combat_message(character_name + " esquive " + attacker_name + " !")
-			_flash_unit(instance_id, Color("#73D99A"))
+			var dodge_sprite = figure_visuals.get(instance_id)
+			_show_damage_bubble(dodge_sprite, "Manqué!")
 			return false
 
 	if damage_type == "magic":
@@ -1696,20 +1678,12 @@ func _apply_damage(
 		defending_units.erase(instance_id)
 	amount = maxi(1, int(ceil(float(amount) - effective_defense)))
 	unit_health[instance_id] = maxi(0, int(unit_health[instance_id]) - amount)
-	var target_name := str(target_figure.get("data", {}).get("name", "Figurine"))
-	var damage_source := source_name
-	if damage_source.is_empty():
-		damage_source = "la magie" if damage_type == "magic" else "l'attaque"
-	if damage_type == "effect":
-		damage_source = source_name if not source_name.is_empty() else "un effet"
-	_show_combat_message(
-		"%s subit %d dégâts (%s)." % [target_name, amount, damage_source]
-	)
+
+	var damage_sprite = figure_visuals.get(instance_id)
+	_show_damage_bubble(damage_sprite, "-%d" % amount)
+
 	var flash_color := Color("#ff3c00ff")
-	#if damage_type == "magic":
-		#flash_color = Color("ff3c00ff")
-	#elif damage_type == "effect":
-		#flash_color = Color("#F2A64A")
+	
 	var target_sprite = figure_visuals.get(instance_id)
 	_flash_unit(instance_id, flash_color, target_sprite)
 	_update_unit_health_display(instance_id)
@@ -1774,9 +1748,8 @@ func _apply_healing(instance_id: int, amount: int) -> void:
 	_update_unit_health_display(instance_id)
 	var healed_amount: int = int(unit_health[instance_id]) - previous_health
 	if healed_amount > 0:
-		var figure := _get_unit_figure(instance_id)
-		var character_name := str(figure.get("data", {}).get("name", "Figurine"))
-		_show_combat_message("%s récupère %d PV." % [character_name, healed_amount])
+		var healing_sprite = figure_visuals.get(instance_id)
+		_show_healing_text(healing_sprite, "+%d" % healed_amount)
 		_flash_unit(instance_id, Color("#73D99A"))
 	var effects: Array = status_effects.get(instance_id, [])
 	for index in range(effects.size() - 1, -1, -1):
@@ -1787,6 +1760,131 @@ func _apply_healing(instance_id: int, amount: int) -> void:
 		status_effects.erase(instance_id)
 	else:
 		status_effects[instance_id] = effects
+
+# Affiche les points perdus suite à une attaque ou à un effet secondaire
+func _show_damage_bubble(target_sprite: TextureRect, message: String) -> void:
+	if not is_instance_valid(target_sprite):
+		return
+
+	var bubble := TextureRect.new()
+	bubble.name = "DamageBubble"
+	bubble.texture = load("res://assets/backgrounds/battle_bubble.png")
+	bubble.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bubble.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bubble_x_offset := 25
+
+	bubble.size = Vector2(140, 85)
+	var bubble_x := target_sprite.position.x + target_sprite.size.x - bubble_x_offset
+
+	# Si la figurine est dans la dernière colonne, placer la bulle à gauche
+	if target_sprite.position.x + target_sprite.size.x >= figures_layer.size.x - 10:
+		bubble_x = target_sprite.position.x - bubble.size.x + bubble_x_offset
+
+	bubble.position = Vector2(
+		bubble_x,
+		target_sprite.position.y - 30
+	)
+
+	bubble.z_as_relative = false
+	bubble.z_index = target_sprite.z_index + 10
+
+	figures_layer.add_child(bubble)
+
+	var label := Label.new()
+	label.text = message
+	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 34)
+	label.add_theme_color_override("font_color", Color.BLACK)
+	bubble.add_child(label)
+
+	var initial_position := bubble.position
+
+	var tween := create_tween()
+
+	# Trois mouvements complets de gauche à droite
+	for i in range(3):
+		tween.tween_property(
+			bubble, "position:x",
+			initial_position.x + 5, 0.04
+		)
+		tween.tween_property(
+			bubble, "position:x",
+			initial_position.x - 5, 0.04
+		)
+
+	# Retour à la position initiale
+	tween.tween_property(
+		bubble, "position:x",
+		initial_position.x, 0.04
+	)
+
+	# La bulle reste visible pour être lue
+	tween.tween_interval(1.0)
+
+	# Disparition progressive
+	tween.tween_property(
+		bubble, "modulate",
+		Color(1, 1, 1, 0), 0.5
+	)
+
+	# Suppression après le fondu
+	tween.tween_callback(bubble.queue_free)
+
+# Affiche les points regagné après un soin
+func _show_healing_text(target_sprite: TextureRect, message: String) -> void:
+	if not is_instance_valid(target_sprite):
+		return
+
+	var label := Label.new()
+	label.name = "HealingText"
+	label.text = message
+	label.size = Vector2(90, 40)
+	var heal_text_x_offset := 30
+
+	var text_x := target_sprite.position.x + target_sprite.size.x - heal_text_x_offset
+
+	# Si la figurine est dans la dernière colonne, placer le texte à gauche
+	if target_sprite.position.x + target_sprite.size.x >= figures_layer.size.x - 10:
+		text_x = target_sprite.position.x - label.size.x + heal_text_x_offset
+
+	label.position = Vector2(
+		text_x,
+		target_sprite.position.y - 30
+	)
+
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+
+	label.add_theme_font_size_override("font_size", 34)
+	label.add_theme_color_override("font_color", Color("55ff78ff"))
+
+	label.z_as_relative = false
+	label.z_index = target_sprite.z_index + 10
+
+	figures_layer.add_child(label)
+
+	# Le texte reste visible pendant une seconde
+	var tween := create_tween()
+	tween.tween_interval(0.2)
+
+	# Puis il monte et disparaît progressivement
+	tween.tween_property(
+		label,
+		"position:y",
+		label.position.y - 35,
+		0.45
+	)
+	tween.parallel().tween_property(
+		label,
+		"modulate:a",
+		0.0,
+		0.45
+	)
+
+	tween.tween_callback(label.queue_free)
 
 func _has_status_effect(instance_id: int, effect_id: String) -> bool:
 	for effect in status_effects.get(instance_id, []):
@@ -1837,14 +1935,6 @@ func _update_unit_health_display(instance_id: int) -> void:
 
 func _format_hearts(lives: int) -> String:
 	return "♥ ".repeat(lives).strip_edges()
-
-func _show_combat_message(message: String) -> void:
-	combat_message_label.text = message
-	combat_message_label.visible = true
-	combat_message_timer.start()
-
-func _on_combat_message_timeout() -> void:
-	combat_message_label.visible = false
 
 func _check_battle_over() -> bool:
 	if current_phase == BattlePhase.FINISHED:
@@ -2325,15 +2415,31 @@ func _play_technique_animation(
 	target_sprite: TextureRect = null,
 	target_defeated: bool = false
 ) -> void:
+	var selected_technique: Dictionary = GameManager.techniques_catalog.get(
+			animation_name,
+			{}
+		)
+		
+	if selected_technique.get("anim_duration", 0.0) == 0.0:
+		return
+	
+	print("Animation duration > 0")
+	
 	var animation := TextureRect.new()
 
 	animation.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	animation.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	animation.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	# Conserver les proportions des images (234 x 363).
-	var animation_height := target_size.y
-	var animation_width := animation_height * 234.0 / 363.0
+	var animation_height := target_size.y * 1.2
+	
+	var sprite_size: float
+	var animation_frames_number: Array
+	
+	sprite_size = selected_technique.get("anim_width", 0.0) / selected_technique.get("anim_height", 0.0)
+	animation_frames_number = range(1, int(selected_technique.get("anim_duration", 0)))
+	
+	var animation_width := animation_height * sprite_size
 
 	animation.size = Vector2(animation_width, animation_height)
 	animation.position = Vector2(
@@ -2346,8 +2452,8 @@ func _play_technique_animation(
 
 	figures_layer.add_child(animation)
 	
-	# Jouer les 8 images à 12 images par seconde.
-	for frame_index in range(1, 9):
+	# Jouer les images de l'animation à 12 images par seconde.
+	for frame_index in animation_frames_number:
 		var image_path := (
 			"res://assets/animations/techniques/%s_animation_%02d.png"
 			% [animation_name, frame_index]

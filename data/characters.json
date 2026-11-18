@@ -261,7 +261,7 @@
 		"attack": 8,
 		"defense": 8,
 		"escape": 1,
-		"chance": 1,
+		"chance": 0,
 		"moves": 3,
 		"techniques": ["fire","ice","thunder","heal","resurrection"]
 	  },
@@ -280,7 +280,7 @@
 		"attack": 6,
 		"defense": 8,
 		"escape": 1,
-		"chance": 1,
+		"chance": 0,
 		"moves": 4,
 		"techniques": ["fire","ice","thunder","wind","heal"]
 	  },
@@ -299,7 +299,7 @@
 		"attack": 14,
 		"defense": 11,
 		"escape": 2,
-		"chance": 1,
+		"chance": 0,
 		"moves": 3,
 		"techniques": ["fire","knight_shield"]
 	  },
@@ -342,6 +342,63 @@
 		"techniques": []
 	  },
 	  "class": "warrior"
+	},
+	{"id": "grimm",
+	  "name": "Grimm",
+	  "rarity": 3,
+	  "description": "Faucheur des âmes perdues, il est constamment à la recherche ne nouvelles proies à envoyer au royaume des morts pour quelques gemmes.",
+	  "image": "grimm.png",
+	  "sell_value": 8,
+	  "stats": {
+		"lifepoints": 25,
+		"magic": 9,
+		"spirit": 4,
+		"attack": 11,
+		"defense": 2,
+		"escape": 2,
+		"chance": 1,
+		"moves": 3,
+		"techniques": ["darkness", "resurrection"]
+	  },
+	  "class": "knight"
+	},
+	{"id": "ramuda",
+	  "name": "Ramuda",
+	  "rarity": 6,
+	  "description": "Il était autrefois le meilleur chasseur du clan des singes. Pour le récompenser de ses prouesses de chasseur, il reçu un masque en bois de la part des membres de son clan et depuis ce jour il ne peut s'empêcher de danser en chassant. Ses danses sont devenues tellement légendaires qu'il fut élevé au rang de Dieu de la danse et de la chasse. Grace à ses danses, il hypnotise ses proies qui sont alors totalement sous son contrôle.",
+	  "image": "ramuda.png",
+	  "sell_value": 40,
+	  "stats": {
+		"lifepoints": 40,
+		"magic": 8,
+		"spirit": 14,
+		"attack": 11,
+		"defense": 5,
+		"escape": 1,
+		"chance": 0,
+		"moves": 2,
+		"techniques": ["hypnosis"]
+	  },
+	  "class": "warrior"
+	},
+	{"id": "maxime",
+	  "name": "Maxime",
+	  "rarity": 3,
+	  "description": "Depuis tout petit on lui raconte des histoires. Dès qu'il eu l'âge de lire lui-même, il se rendit compte que ce qu'il lisait prénait vie devant lui. Depuis, il se balade constamment avec une véritable bibliothèque dans ses poches et ne lache jamais ses livres des yeux.",
+	  "image": "maxime.png",
+	  "sell_value": 8,
+	  "stats": {
+		"lifepoints": 31,
+		"magic": 9,
+		"spirit": 6,
+		"attack": 2,
+		"defense": 4,
+		"escape": 2,
+		"chance": 2,
+		"moves": 2,
+		"techniques": ["summoning"]
+	  },
+	  "class": "magician"
 	}
   ]
 }
