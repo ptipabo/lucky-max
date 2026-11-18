@@ -73,6 +73,9 @@ var player_figure_positions: Dictionary = {}
 
 # Illustrations affichées sur le plateau.
 var figure_visuals: Dictionary = {}
+var battle_figure_data: Dictionary = {}
+var battle_figure_directions: Dictionary = {}
+var battle_figure_pose_versions: Dictionary = {}
 
 # Gestion du glisser-déposer.
 var dragged_instance_id: int = -1
@@ -537,7 +540,9 @@ func _create_figure_visual(
 		return
 
 	var image_path: String = "res://assets/characters/" + image_name
-	var texture := load(image_path) as Texture2D
+	var texture := _get_battle_pose_texture(figure, "idle", "front")
+	if texture == null:
+		texture = load(image_path) as Texture2D
 
 	if texture == null:
 		push_warning("Impossible de charger : " + image_path)
@@ -615,6 +620,54 @@ func _create_figure_visual(
 		enemy_figure_visuals.append(sprite)
 		figure_visuals[instance_id] = sprite
 		enemy_figure_positions[instance_id] = Vector2i(row, column)
+	battle_figure_data[instance_id] = figure
+	battle_figure_directions[instance_id] = "back" if is_player_figure else "front"
+	_set_battle_pose(instance_id, "idle")
+
+func _get_battle_pose_texture(figure: Dictionary, pose: String, direction: String) -> Texture2D:
+	var character_id := str(figure.get("character_id", ""))
+	if character_id.is_empty():
+		return null
+	var path := "res://assets/characters/battle/%s/%s_battle_%s_%s.png" % [
+		character_id, character_id, pose, direction
+	]
+	if not ResourceLoader.exists(path):
+		return null
+	return load(path) as Texture2D
+
+func _set_battle_pose(instance_id: int, pose: String) -> void:
+	var sprite := figure_visuals.get(instance_id) as TextureRect
+	var figure: Dictionary = battle_figure_data.get(instance_id, {})
+	if not is_instance_valid(sprite) or figure.is_empty():
+		return
+	var direction := str(battle_figure_directions.get(instance_id, "front"))
+	var texture := _get_battle_pose_texture(figure, pose, direction)
+	if texture == null:
+		texture = _get_battle_pose_texture(figure, "idle", direction)
+	if texture != null:
+		sprite.texture = texture
+
+func _face_unit_toward(instance_id: int, target_id: int) -> void:
+	var origin := _get_unit_position(instance_id)
+	var target := _get_unit_position(target_id)
+	if origin.x < 0 or target.x < 0:
+		return
+	var direction := "back" if target.x < origin.x else "front"
+	if origin.y != target.y:
+		direction = "right" if target.y > origin.y else "left"
+	battle_figure_directions[instance_id] = direction
+	_set_battle_pose(instance_id, "idle")
+
+func _play_unit_pose(instance_id: int, pose: String, duration: float = 0.45) -> void:
+	_set_battle_pose(instance_id, pose)
+	var version := int(battle_figure_pose_versions.get(instance_id, 0)) + 1
+	battle_figure_pose_versions[instance_id] = version
+	_restore_battle_idle_after(instance_id, version, duration)
+
+func _restore_battle_idle_after(instance_id: int, version: int, duration: float) -> void:
+	await get_tree().create_timer(duration).timeout
+	if int(battle_figure_pose_versions.get(instance_id, -1)) == version:
+		_set_battle_pose(instance_id, "idle")
 
 func _refresh_enemy_figure_visuals() -> void:
 	for sprite in enemy_figure_visuals:
@@ -923,6 +976,16 @@ func _drop_figure_on_board(global_position: Vector2) -> void:
 			_clear_movement_highlights()
 
 			_create_figure_visual(figure, row, column)
+			if was_placed and old_position != Vector2i(row, column):
+				if old_position.y != column:
+					battle_figure_directions[moved_instance_id] = (
+						"right" if column > old_position.y else "left"
+					)
+				else:
+					battle_figure_directions[moved_instance_id] = (
+						"back" if row < old_position.x else "front"
+					)
+				_set_battle_pose(moved_instance_id, "idle")
 			if current_phase == BattlePhase.PLAYER_MOVEMENT:
 				player_move_points_used[moved_instance_id] = (
 					int(player_move_points_used.get(moved_instance_id, 0))
@@ -1498,6 +1561,8 @@ func _resolve_character_action(target_id: int) -> void:
 	if pending_action == "attack":
 		if target_id > 0:
 			return
+		_face_unit_toward(selected_actor_id, target_id)
+		_play_unit_pose(selected_actor_id, "hit", 0.55)
 
 		_apply_damage(
 			target_id,
@@ -1508,6 +1573,8 @@ func _resolve_character_action(target_id: int) -> void:
 			str(actor.get("data", {}).get("name", "Figurine alliée"))
 		)
 	else:
+		_face_unit_toward(selected_actor_id, target_id)
+		_play_unit_pose(selected_actor_id, "magic", 0.7)
 		var actor_name := str(
 			actor.get("data", {}).get("name", "Figurine alliée")
 		)
@@ -1681,6 +1748,7 @@ func _apply_damage(
 
 	var damage_sprite = figure_visuals.get(instance_id)
 	_show_damage_bubble(damage_sprite, "-%d" % amount)
+	_play_unit_pose(instance_id, "damage", 0.55)
 
 	var flash_color := Color("#ff3c00ff")
 	
@@ -2169,6 +2237,13 @@ func _run_enemy_figure_turn(instance_id: int) -> void:
 	var action: Dictionary = _choose_enemy_attack(figure, target)
 	var performed_action := not action.is_empty()
 	if performed_action:
+		if not bool(target["is_heart"]):
+			_face_unit_toward(instance_id, int(target["instance_id"]))
+		_play_unit_pose(
+			instance_id,
+			"magic" if action["type"] == "magic" else "hit",
+			0.7
+		)
 		if bool(target["is_heart"]):
 			player_heart_lives = maxi(0, player_heart_lives - 1)
 			enemy_heart_attack_count += 1
@@ -2377,8 +2452,19 @@ func _animate_enemy_figure_move(
 	var tween := create_tween()
 	tween.set_trans(Tween.TRANS_SINE)
 	tween.set_ease(Tween.EASE_IN_OUT)
+	var previous_position: Vector2i = enemy_figure_positions.get(instance_id, path[0])
 
 	for destination in path:
+		if previous_position.y != destination.y:
+			battle_figure_directions[instance_id] = (
+				"right" if destination.y > previous_position.y else "left"
+			)
+			_set_battle_pose(instance_id, "idle")
+		elif previous_position.x != destination.x:
+			battle_figure_directions[instance_id] = (
+				"back" if destination.x < previous_position.x else "front"
+			)
+			_set_battle_pose(instance_id, "idle")
 		var cell_center := _get_cell_center(destination.x, destination.y)
 		var target_position := Vector2(
 			cell_center.x - sprite.size.x / 2.0,
@@ -2391,6 +2477,7 @@ func _animate_enemy_figure_move(
 			target_position,
 			ENEMY_STEP_DURATION
 		)
+		previous_position = destination
 
 	await tween.finished
 	var final_position: Vector2i = path[path.size() - 1]
